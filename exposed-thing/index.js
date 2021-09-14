@@ -1,5 +1,5 @@
 //Where your concrete implementation is included
-WotDevice = require("./dist/base.js").WotDevice
+WotDevice = require("./src/led.js").WotDevice
 
 /*
 This project supports the registration of the generated TD to a TD directory
