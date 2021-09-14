@@ -7,6 +7,15 @@ var ajv = new Ajv();
 
 const Gpio = require('onoff').Gpio;
 const led = new Gpio(17, 'out');
+const button = new Gpio(4, 'in', 'falling');
+
+function toggleLed() {
+    led.read().then(state => {
+        state = state ^ 1;
+        led.write(state);
+        console.log("Led toggled to: " + state);
+    });
+}
 
 export class WotDevice {
     public thing: WoT.ExposedThing;
@@ -23,8 +32,8 @@ export class WotDevice {
                     { "@language" : "en" }],
                 "@type": "",
                 id : "new:thing",
-                title : "led",
-                description : "A led connected to the rpi",
+                title : "led_button",
+                description : "A led and a button connected to the rpi",
                 securityDefinitions: { 
                     "": { 
                         "scheme": "" 
@@ -41,8 +50,8 @@ export class WotDevice {
                     toggle:{
                         description: "Toggle the state of the led",	
                         output:{
-							type: "string"
-						}
+                            type: "string"
+                        }
                     },
                     switch:{
                         description: "Switch the state of the led depending on the input",	
@@ -59,10 +68,19 @@ export class WotDevice {
                             required: ['newState'],
                         },
                         output:{
-							type: "string"
-						}
+                            type: "string"
+                        }
                     }
-                }
+                },
+                events:{
+                	buttonPressed:{
+							description: "Detects the press of the button",
+							data:{
+								type: "string"
+							}
+							
+					}
+				},
             }
         ).then((exposedThing)=>{
             this.thing = exposedThing;
@@ -71,7 +89,7 @@ export class WotDevice {
             this.add_actions();
             this.thing.expose();
             if (tdDirectory) { this.register(tdDirectory); }
-            // this.listen_to_myEvent(); //used to listen to specific events provided by a library. If you don't have events, simply remove it
+            this.listen_to_buttonPress();
         });
     }
     
@@ -93,50 +111,55 @@ export class WotDevice {
     private statePropertyHandler(){
         return new Promise((resolve, reject) => {
             led.read().then(state => {
-                console.log("Current state of the led: " + state)
-                resolve({"state": state})
+                console.log("Current state of the led: " + state);
+                resolve({"state": state});
             })
         });
     }
 
     private toggleActionHandler(){
         return new Promise((resolve, reject) => {
-            led.read().then(state => {
-                state = state ^ 1
-                led.write(state)
-                console.log("Led toggled to: " + state)
-            })
-            resolve("Led toggled")
+            toggleLed()
+            resolve("Led toggled");
         });	
     }
 
     private switchActionHandler(newState){
         return new Promise((resolve, reject) => {
-            led.write(newState)
+            led.write(newState);
             resolve("New led state: " + newState);
         });	
     }
 
-    // private listen_to_myEvent() {
-    //     /*
-    //     specialLibrary.getMyEvent()//change specialLibrary to your library
-    //     .then((thisEvent) => {
-    //         this.thing.emitEvent("myEvent",""); //change quotes to your own event data
-    //     });
-    //     */
-    // }
+    private listen_to_buttonPress() {
+        /*
+            SUBSCRIBE TO 'BUTTONPRESSED' EVENT:
+            verb: get
+            url: {}/led_button/events/buttonPressed
+        */
+        button.watch(() => {
+            console.log("Button pressed")
+            this.thing.emitEvent("buttonPressed", "Button pressed");
+            toggleLed()
+        });
+    }
 
     private add_properties() {
         this.thing.writeProperty("state", 0);   // initialize led to 0
-        this.thing.readProperty("state").then(res => console.log("Initial led state: " + res)).catch(() => console.log("Error"))
-        this.thing.setPropertyReadHandler("state", this.statePropertyHandler)
+        this.thing.readProperty("state").then(state => console.log("Initial led state: " + state)).catch(() => console.log("Error reading 'state' property"));
+        this.thing.setPropertyReadHandler("state", this.statePropertyHandler);
         
     }
 
     private add_actions() {
+        /*  FORMAT OF THE 'TOGGLE' ACTION:
+            verb: post
+            url: {}/led_button/actions/toggle
+        */
         this.thing.setActionHandler("toggle", this.toggleActionHandler);
         /*  FORMAT OF THE 'SWITCH' ACTION:
-            url: {}/led/actions/switch
+            verb: post
+            url: {}/led_button/actions/switch
             body: {
                 "newState": 0 (or 1)
             }
