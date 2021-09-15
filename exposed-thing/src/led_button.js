@@ -51,7 +51,6 @@ function toggleLed() {
                     state = _a.sent();
                     state = state ^ 1;
                     led.write(state);
-                    console.log("Led toggled to: " + state);
                     return [2 /*return*/, state];
             }
         });
@@ -82,7 +81,7 @@ var WotDevice = /** @class */ (function () {
             properties: {
                 state: {
                     description: "Current led state",
-                    type: "number",
+                    type: "object",
                     observable: true
                 }
             },
@@ -90,7 +89,7 @@ var WotDevice = /** @class */ (function () {
                 toggle: {
                     description: "Toggle the state of the led",
                     output: {
-                        type: "string"
+                        type: "object"
                     }
                 },
                 "switch": {
@@ -108,7 +107,7 @@ var WotDevice = /** @class */ (function () {
                         required: ['newState']
                     },
                     output: {
-                        type: "string"
+                        type: "object"
                     }
                 }
             },
@@ -117,6 +116,12 @@ var WotDevice = /** @class */ (function () {
                     description: "Detects the press of the button",
                     data: {
                         type: "string"
+                    }
+                },
+                state: {
+                    description: "Detects the change of the led state",
+                    data: {
+                        type: "object"
                     }
                 }
             }
@@ -152,7 +157,10 @@ var WotDevice = /** @class */ (function () {
         return led.read().then(function (state) {
             console.log("Current state of the led: " + state);
             // return {"state": state};
-            return state;
+            return {
+                "state": state,
+                "timestamp": 56
+            };
         });
     };
     WotDevice.prototype.toggleActionHandler = function () {
@@ -160,11 +168,10 @@ var WotDevice = /** @class */ (function () {
             var state;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, toggleLed()
-                        // this.thing.writeProperty("state", state);
-                    ];
+                    case 0: return [4 /*yield*/, toggleLed()];
                     case 1:
                         state = _a.sent();
+                        console.log("HTTP post, led toggled to: " + state);
                         // this.thing.writeProperty("state", state);
                         return [2 /*return*/, ("New led state: " + state)];
                 }
@@ -172,8 +179,13 @@ var WotDevice = /** @class */ (function () {
         });
     };
     WotDevice.prototype.switchActionHandler = function (newState) {
+        var _this = this;
         return new Promise(function (resolve, reject) {
             led.write(newState);
+            _this.thing.writeProperty("state", {
+                "state": newState,
+                "timestamp": 56
+            });
             resolve("New led state: " + newState);
         });
     };
@@ -193,15 +205,23 @@ var WotDevice = /** @class */ (function () {
                         state = _a.sent();
                         console.log("Button pressed, led toggled to: " + state);
                         this.thing.emitEvent("buttonPressed", "Button pressed, led toggled to: " + state);
-                        this.thing.writeProperty("state", state);
+                        this.thing.writeProperty("state", {
+                            "state": state,
+                            "timestamp": 56
+                        });
                         return [2 /*return*/];
                 }
             });
         }); });
     };
     WotDevice.prototype.add_properties = function () {
+        var _this = this;
         this.thing.writeProperty("state", 0); // initialize led to 0
         this.thing.readProperty("state").then(function (state) { return console.log("Initial led state: " + state); })["catch"](function () { return console.log("Error reading 'state' property"); });
+        this.thing.observeProperty('state', function (state) {
+            console.log(state);
+            _this.thing.emitEvent("state", state);
+        });
         this.thing.setPropertyReadHandler("state", this.statePropertyHandler);
     };
     WotDevice.prototype.add_actions = function () {

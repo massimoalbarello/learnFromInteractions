@@ -14,35 +14,35 @@ servient.start().then((WoT) => {
     wotHelper.fetch(LedButtonThingAddress).then(async (td) => {
         try {
             let thing = await WoT.consume(td);
-            log("Thing Description:\n", td);
+            log("Thing Description:", td);
 
-            // Read property 'state'
-            let state = await thing.readProperty('state');
-            log("Property 'state' value is: " +  state);
+            // // Read property 'state'
+            // let state = await thing.readProperty('state');
+            // log("Property 'state' value is: " +  state);
 
-            // // Observe led state
-            // thing.observeProperty('state', (state) => {
-            //     log("Led state changed: " + state);
-            // });
-
-            // Toggle led state
-            let toggle = await thing.invokeAction('toggle');
-            log(toggle)
-
-            // switch the led on
-            let switchOn = await thing.invokeAction('switch', {'newState': 1});
-            log(switchOn);
-            
-            // Handler for 'buttonPressed' event
-            thing.subscribeEvent('buttonPressed', (response) => {
-                log(response)
+            // Observe led state
+            thing.observeProperty('state', (state) => {
+                log(state);
             });
+
+            // // Toggle led state
+            // let toggle = await thing.invokeAction('toggle');
+            // log(toggle)
+
+            // // switch the led on
+            // let switchOn = await thing.invokeAction('switch', {'newState': 1});
+            // log(switchOn);
+            
+            // // Handler for 'buttonPressed' event
+            // thing.subscribeEvent('buttonPressed', (response) => {
+            //     log(response)
+            // });
         }
         catch (err) {
             console.error('Script error:', err);
         }
     });
-    // Print data and an accompanying message in a distinguishable way
+
     function log(response) {
         console.log('======================');
         console.log(response);

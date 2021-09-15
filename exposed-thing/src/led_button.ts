@@ -13,7 +13,6 @@ async function toggleLed() {
     let state = await led.read();
     state = state ^ 1;
     led.write(state);
-    console.log("Led toggled to: " + state);
     return state;
 }
 
@@ -43,7 +42,7 @@ export class WotDevice {
                 properties:{
                     state:{
                             description: "Current led state",
-                            type: "number",
+                            type: "object",
                             observable: true,
                     }
                 },
@@ -51,7 +50,7 @@ export class WotDevice {
                     toggle:{
                         description: "Toggle the state of the led",	
                         output:{
-                            type: "string"
+                            type: "object"
                         }
                     },
                     switch:{
@@ -69,18 +68,23 @@ export class WotDevice {
                             required: ['newState'],
                         },
                         output:{
-                            type: "string"
+                            type: "object"
                         }
                     }
                 },
                 events:{
                 	buttonPressed:{
-							description: "Detects the press of the button",
-							data:{
-								type: "string"
-							}
-							
-					}
+                        description: "Detects the press of the button",
+                        data:{
+                            type: "string"
+                        }
+                    },
+                    state:{
+                        description: "Detects the change of the led state",
+                        data:{
+                            type: "object"
+                        }	
+					}                       
 				},
             }
         ).then((exposedThing)=>{
@@ -113,13 +117,17 @@ export class WotDevice {
         return led.read().then(state => {
                 console.log("Current state of the led: " + state);
                 // return {"state": state};
-                return state;
+                return {
+                    "state": state,
+                    "timestamp": 56
+                };
 
         });
     }
 
     private async toggleActionHandler() {
         const state = await toggleLed()
+        console.log("HTTP post, led toggled to: " + state)
         // this.thing.writeProperty("state", state);
         return ("New led state: " + state);
     }
@@ -127,6 +135,10 @@ export class WotDevice {
     private switchActionHandler(newState){
         return new Promise((resolve, reject) => {
             led.write(newState);
+            this.thing.writeProperty("state", {
+                "state": newState,
+                "timestamp": 56
+            });
             resolve("New led state: " + newState);
         });	
     }
@@ -141,14 +153,21 @@ export class WotDevice {
             const state = await toggleLed()
             console.log("Button pressed, led toggled to: " + state)
             this.thing.emitEvent("buttonPressed", "Button pressed, led toggled to: " + state);
-            this.thing.writeProperty("state", state);
+            this.thing.writeProperty("state", {
+                "state": state,
+                "timestamp": 56
+            });
 
         });
-    }
+    }    
 
     private add_properties() {
         this.thing.writeProperty("state", 0);   // initialize led to 0
         this.thing.readProperty("state").then(state => console.log("Initial led state: " + state)).catch(() => console.log("Error reading 'state' property"));
+        this.thing.observeProperty('state', (state) => {
+            console.log(state);
+            this.thing.emitEvent("state", state);
+        });
         this.thing.setPropertyReadHandler("state", this.statePropertyHandler);
         
     }
