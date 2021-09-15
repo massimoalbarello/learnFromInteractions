@@ -9,12 +9,12 @@ const Gpio = require('onoff').Gpio;
 const led = new Gpio(17, 'out');
 const button = new Gpio(4, 'in', 'falling');
 
-function toggleLed() {
-    led.read().then(state => {
-        state = state ^ 1;
-        led.write(state);
-        console.log("Led toggled to: " + state);
-    });
+async function toggleLed() {
+    let state = await led.read();
+    state = state ^ 1;
+    led.write(state);
+    console.log("Led toggled to: " + state);
+    return state;
 }
 
 export class WotDevice {
@@ -43,7 +43,8 @@ export class WotDevice {
                 properties:{
                     state:{
                             description: "Current led state",
-                            type: "number"
+                            type: "number",
+                            observable: true,
                     }
                 },
                 actions:{
@@ -109,19 +110,18 @@ export class WotDevice {
     }
 
     private statePropertyHandler(){
-        return new Promise((resolve, reject) => {
-            led.read().then(state => {
+        return led.read().then(state => {
                 console.log("Current state of the led: " + state);
-                resolve({"state": state});
-            })
+                // return {"state": state};
+                return state;
+
         });
     }
 
-    private toggleActionHandler(){
-        return new Promise((resolve, reject) => {
-            toggleLed()
-            resolve("Led toggled");
-        });	
+    private async toggleActionHandler() {
+        const state = await toggleLed()
+        // this.thing.writeProperty("state", state);
+        return ("New led state: " + state);
     }
 
     private switchActionHandler(newState){
@@ -137,10 +137,12 @@ export class WotDevice {
             verb: get
             url: {}/led_button/events/buttonPressed
         */
-        button.watch(() => {
-            console.log("Button pressed")
-            this.thing.emitEvent("buttonPressed", "Button pressed");
-            toggleLed()
+        button.watch(async () => {
+            const state = await toggleLed()
+            console.log("Button pressed, led toggled to: " + state)
+            this.thing.emitEvent("buttonPressed", "Button pressed, led toggled to: " + state);
+            this.thing.writeProperty("state", state);
+
         });
     }
 
