@@ -116,7 +116,6 @@ export class WotDevice {
     private statePropertyHandler(){
         return led.read().then(state => {
                 console.log("Current state of the led: " + state);
-                // return {"state": state};
                 return {
                     "state": state,
                     "timestamp": 56
@@ -128,7 +127,7 @@ export class WotDevice {
     private async toggleActionHandler() {
         const state = await toggleLed()
         console.log("HTTP post, led toggled to: " + state)
-        // this.thing.writeProperty("state", state);
+        // this.thing.writeProperty("state", state);    // give error 'cannot read property writeProperty of undefined'
         return ("New led state: " + state);
     }
 
@@ -162,8 +161,14 @@ export class WotDevice {
     }    
 
     private add_properties() {
-        this.thing.writeProperty("state", 0);   // initialize led to 0
-        this.thing.readProperty("state").then(state => console.log("Initial led state: " + state)).catch(() => console.log("Error reading 'state' property"));
+        this.thing.writeProperty("state", {
+            "state": 0,
+            "timestamp": 56
+        });   // initialize led to 0
+        this.thing.readProperty("state").then(state => console.log("Initial led state: " + {
+            "state": state,
+            "timestamp": 56
+        })).catch(() => console.log("Error reading 'state' property"));
         this.thing.observeProperty('state', (state) => {
             console.log(state);
             this.thing.emitEvent("state", state);

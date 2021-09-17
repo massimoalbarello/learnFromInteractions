@@ -22,7 +22,8 @@
     "button-events": "^1.0.2",
     "onoff": "^6.0.3",
     "request": "2.88.0",
-    "rpi-gpio-buttons": "^2.0.1"
+    "rpi-gpio-buttons": "^2.0.1",
+    "rxjs": "^7.3.0"
   },
   "optionalDependencies": {},
   "scripts": {

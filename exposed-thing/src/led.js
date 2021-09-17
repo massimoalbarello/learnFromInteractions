@@ -1,8 +1,6 @@
 "use strict";
 exports.__esModule = true;
 var request = require('request');
-var Ajv = require('ajv');
-var ajv = new Ajv();
 var Gpio = require('onoff').Gpio;
 var led = new Gpio(17, 'out');
 var WotDevice = /** @class */ (function () {
@@ -39,24 +37,6 @@ var WotDevice = /** @class */ (function () {
                     output: {
                         type: "string"
                     }
-                },
-                "switch": {
-                    description: "Switch the state of the led depending on the input",
-                    input: {
-                        type: 'object',
-                        properties: {
-                            newState: {
-                                type: 'integer',
-                                description: "Determines the value of the new state",
-                                minimum: 0,
-                                maximum: 1
-                            }
-                        },
-                        required: ['newState']
-                    },
-                    output: {
-                        type: "string"
-                    }
                 }
             }
         }).then(function (exposedThing) {
@@ -68,7 +48,6 @@ var WotDevice = /** @class */ (function () {
             if (tdDirectory) {
                 _this.register(tdDirectory);
             }
-            // this.listen_to_myEvent(); //used to listen to specific events provided by a library. If you don't have events, simply remove it
         });
     }
     WotDevice.prototype.register = function (directory) {
@@ -105,45 +84,13 @@ var WotDevice = /** @class */ (function () {
             resolve("Led toggled");
         });
     };
-    WotDevice.prototype.switchActionHandler = function (newState) {
-        return new Promise(function (resolve, reject) {
-            led.write(newState);
-            resolve("New led state: " + newState);
-        });
-    };
-    // private listen_to_myEvent() {
-    //     /*
-    //     specialLibrary.getMyEvent()//change specialLibrary to your library
-    //     .then((thisEvent) => {
-    //         this.thing.emitEvent("myEvent",""); //change quotes to your own event data
-    //     });
-    //     */
-    // }
     WotDevice.prototype.add_properties = function () {
         this.thing.writeProperty("state", 0); // initialize led to 0
         this.thing.readProperty("state").then(function (res) { return console.log("Initial led state: " + res); })["catch"](function () { return console.log("Error"); });
         this.thing.setPropertyReadHandler("state", this.statePropertyHandler);
     };
     WotDevice.prototype.add_actions = function () {
-        var _this = this;
         this.thing.setActionHandler("toggle", this.toggleActionHandler);
-        /*  FORMAT OF THE 'SWITCH' ACTION:
-            url: {}/led/actions/switch
-            body: {
-                "newState": 0 (or 1)
-            }
-            format: application/json
-        */
-        this.thing.setActionHandler("switch", function (inputData) {
-            return new Promise(function (resolve, reject) {
-                if (!ajv.validate(_this.td.actions["switch"].input, inputData)) {
-                    reject(new Error("Invalid input"));
-                }
-                else {
-                    resolve(_this.switchActionHandler(inputData["newState"]));
-                }
-            });
-        });
     };
     return WotDevice;
 }());

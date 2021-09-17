@@ -156,7 +156,6 @@ var WotDevice = /** @class */ (function () {
     WotDevice.prototype.statePropertyHandler = function () {
         return led.read().then(function (state) {
             console.log("Current state of the led: " + state);
-            // return {"state": state};
             return {
                 "state": state,
                 "timestamp": 56
@@ -166,6 +165,7 @@ var WotDevice = /** @class */ (function () {
     WotDevice.prototype.toggleActionHandler = function () {
         return __awaiter(this, void 0, void 0, function () {
             var state;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, toggleLed()];
@@ -173,7 +173,14 @@ var WotDevice = /** @class */ (function () {
                         state = _a.sent();
                         console.log("HTTP post, led toggled to: " + state);
                         // this.thing.writeProperty("state", state);
-                        return [2 /*return*/, ("New led state: " + state)];
+                        // return ("New led state: " + state);
+                        return [2 /*return*/, new Promise(function (resolve, reject) {
+                                _this.thing.writeProperty("state", {
+                                    "state": state,
+                                    "timestamp": 56
+                                });
+                                resolve("New led state: " + state);
+                            })];
                 }
             });
         });
@@ -216,8 +223,14 @@ var WotDevice = /** @class */ (function () {
     };
     WotDevice.prototype.add_properties = function () {
         var _this = this;
-        this.thing.writeProperty("state", 0); // initialize led to 0
-        this.thing.readProperty("state").then(function (state) { return console.log("Initial led state: " + state); })["catch"](function () { return console.log("Error reading 'state' property"); });
+        this.thing.writeProperty("state", {
+            "state": 0,
+            "timestamp": 56
+        }); // initialize led to 0
+        this.thing.readProperty("state").then(function (state) { return console.log("Initial led state: " + {
+            "state": state,
+            "timestamp": 56
+        }); })["catch"](function () { return console.log("Error reading 'state' property"); });
         this.thing.observeProperty('state', function (state) {
             console.log(state);
             _this.thing.emitEvent("state", state);

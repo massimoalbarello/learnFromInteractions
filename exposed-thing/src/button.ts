@@ -3,7 +3,7 @@ import * as WoT from "wot-typescript-definitions"
 var request = require('request');
 
 const Gpio = require('onoff').Gpio;
-const led = new Gpio(17, 'out');
+const button = new Gpio(4, 'in', 'falling');
 
 export class WotDevice {
     public thing: WoT.ExposedThing;
@@ -20,36 +20,29 @@ export class WotDevice {
                     { "@language" : "en" }],
                 "@type": "",
                 id : "new:thing",
-                title : "led",
-                description : "A led connected to the rpi",
+                title : "button",
+                description : "A button connected to the rpi",
                 securityDefinitions: { 
                     "": { 
                         "scheme": "" 
                     }
                 },
                 security: "",
-                properties:{
-                    state:{
-                            description: "Current led state",
-                            type: "number"
-                    }
-                },
-                actions:{
-                    toggle:{
-                        description: "Toggle the state of the led",	
-                        output:{
-							type: "string"
-						}
-                    },
-                }
+                events:{
+                	press:{
+                        description: "Detects the press of the button",
+                        data:{
+                            type: "string"
+                        }
+                    },                      
+				},
             }
         ).then((exposedThing)=>{
             this.thing = exposedThing;
             this.td = exposedThing.getThingDescription();
-            this.add_properties();
-            this.add_actions();
             this.thing.expose();
             if (tdDirectory) { this.register(tdDirectory); }
+            this.listen_to_buttonPress();
         });
     }
     
@@ -68,34 +61,15 @@ export class WotDevice {
         });
     }
 
-    private statePropertyHandler(){
-        return new Promise((resolve, reject) => {
-            led.read().then(state => {
-                console.log("Current state of the led: " + state)
-                resolve({"state": state})
-            })
+    private listen_to_buttonPress() {
+        /*
+            SUBSCRIBE TO 'PRESS' EVENT:
+            verb: get
+            url: {}/button/events/press
+        */
+        button.watch(async () => {
+            console.log("Button pressed");
+            this.thing.emitEvent("press", "Button pressed");
         });
-    }
-
-    private toggleActionHandler(){
-        return new Promise((resolve, reject) => {
-            led.read().then(state => {
-                state = state ^ 1
-                led.write(state)
-                console.log("Led toggled to: " + state)
-            })
-            resolve("Led toggled")
-        });	
-    }
-
-    private add_properties() {
-        this.thing.writeProperty("state", 0);   // initialize led to 0
-        this.thing.readProperty("state").then(res => console.log("Initial led state: " + res)).catch(() => console.log("Error"))
-        this.thing.setPropertyReadHandler("state", this.statePropertyHandler)
-        
-    }
-
-    private add_actions() {
-        this.thing.setActionHandler("toggle", this.toggleActionHandler);
     }
 }
