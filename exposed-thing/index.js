@@ -1,5 +1,9 @@
 //Where your concrete implementation is included
-WotDevice = require("./src/led_button.js").WotDevice
+WotButton = require("./src/button.js").WotDevice
+WotLed = require("./src/led.js").WotDevice
+WotHumTemp = require("./src/humidity_temperature.js").WotDevice
+WotViPer = require("./src/virtual_persona.js").WotDevice
+
 
 /*
 This project supports the registration of the generated TD to a TD directory
@@ -16,18 +20,39 @@ HttpServer = require("@node-wot/binding-http").HttpServer
 //MqttBrokerServer = require("@node-wot/binding-mqtt").MqttBrokerServer
 
 //Creating the instances of the binding servers
-var httpServer = new HttpServer({port: 8080});
+var httpServerButton = new HttpServer({port: 8080});
+var httpServerLed = new HttpServer({port: 8081});
+var httpServerHumTemp = new HttpServer({port: 8082});
+var httpServerViPer = new HttpServer({port: 8083});
 //var coapServer = new CoapServer({port: 5683});
 //var mqttServer = new MqttBrokerServer("test.mosquitto.org"); //change it according to the broker address
 
 
 //Building the servient object
-var servient = new Servient();
+let servientButton = new Servient();
+let servientLed = new Servient();
+let servientHumTemp = new Servient();
+let servientViPer = new Servient();
 //Adding different bindings to the server
-servient.addServer(httpServer);
+servientButton.addServer(httpServerButton);
+servientLed.addServer(httpServerLed);
+servientHumTemp.addServer(httpServerHumTemp);
+servientViPer.addServer(httpServerViPer);
 //servient.addServer(coapServer);
 //servient.addServer(mqttServer);
 
-servient.start().then((WoT) => {
-    wotDevice = new WotDevice(WoT, TD_DIRECTORY); // you can change the wotDevice to something that makes more sense
+servientButton.start().then((WoT) => {
+    wotButton = new WotButton(WoT, TD_DIRECTORY);
+});
+
+servientLed.start().then((WoT) => {
+    wotLed = new WotLed(WoT, TD_DIRECTORY);
+});
+
+servientHumTemp.start().then((WoT) => {
+    wotHumTemp = new WotHumTemp(WoT, TD_DIRECTORY);
+});
+
+servientViPer.start().then((WoT) => {
+    wotViPer = new WotViPer(WoT, TD_DIRECTORY);
 });
