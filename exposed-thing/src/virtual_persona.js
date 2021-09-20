@@ -1,8 +1,6 @@
 "use strict";
 exports.__esModule = true;
 var request = require('request');
-var Gpio = require('onoff').Gpio;
-var led = new Gpio(17, 'out');
 var WotDevice = /** @class */ (function () {
     function WotDevice(WoT, tdDirectory) {
         var _this = this;
@@ -17,8 +15,8 @@ var WotDevice = /** @class */ (function () {
             ],
             "@type": "",
             id: "new:thing",
-            title: "led",
-            description: "A led connected to the rpi",
+            title: "virtual_persona",
+            description: "The virtual persona of Massimo Albarello",
             securityDefinitions: {
                 "": {
                     "scheme": ""
@@ -26,24 +24,15 @@ var WotDevice = /** @class */ (function () {
             },
             security: "",
             properties: {
-                state: {
-                    description: "Current led state",
-                    type: "number"
-                }
-            },
-            actions: {
-                toggle: {
-                    description: "Toggle the state of the led",
-                    output: {
-                        type: "string"
-                    }
+                knowledgeGraph: {
+                    description: "Knowledge graph constructed as the user interacts with WoT devices",
+                    type: "object"
                 }
             }
         }).then(function (exposedThing) {
             _this.thing = exposedThing;
             _this.td = exposedThing.getThingDescription();
             _this.add_properties();
-            _this.add_actions();
             _this.thing.expose();
             if (tdDirectory) {
                 _this.register(tdDirectory);
@@ -66,31 +55,16 @@ var WotDevice = /** @class */ (function () {
             }
         });
     };
-    WotDevice.prototype.statePropertyHandler = function () {
+    WotDevice.prototype.knowledgeGraphWriteHandler = function (res) {
         return new Promise(function (resolve, reject) {
-            led.read().then(function (state) {
-                console.log("Current state of the led: " + state);
-                resolve(state);
-            });
-        });
-    };
-    WotDevice.prototype.toggleActionHandler = function () {
-        return new Promise(function (resolve, reject) {
-            led.read().then(function (state) {
-                state = state ^ 1;
-                led.write(state);
-                console.log("Led toggled to: " + state);
-            });
-            resolve("Led toggled");
+            console.log(res);
+            resolve(res);
         });
     };
     WotDevice.prototype.add_properties = function () {
-        this.thing.writeProperty("state", 0); // initialize led to 0
-        this.thing.readProperty("state").then(function (res) { return console.log("Initial led state: " + res); })["catch"](function () { return console.log("Error"); });
-        this.thing.setPropertyReadHandler("state", this.statePropertyHandler);
-    };
-    WotDevice.prototype.add_actions = function () {
-        this.thing.setActionHandler("toggle", this.toggleActionHandler);
+        this.kg = {};
+        this.thing.writeProperty("knowledgeGraph", this.kg);
+        this.thing.setPropertyWriteHandler("knowledgeGraph", this.knowledgeGraphWriteHandler);
     };
     return WotDevice;
 }());

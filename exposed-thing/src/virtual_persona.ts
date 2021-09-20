@@ -2,13 +2,11 @@ import * as WoT from "wot-typescript-definitions"
 
 var request = require('request');
 
-const Gpio = require('onoff').Gpio;
-const led = new Gpio(17, 'out');
-
 export class WotDevice {
     public thing: WoT.ExposedThing;
     public WoT: WoT.WoT;
     public td: any;
+    public kg: object;
     constructor(WoT: WoT.WoT, tdDirectory?: string) {
         //create WotDevice as a server
         this.WoT = WoT;
@@ -20,8 +18,8 @@ export class WotDevice {
                     { "@language" : "en" }],
                 "@type": "",
                 id : "new:thing",
-                title : "led",
-                description : "A led connected to the rpi",
+                title : "virtual_persona",
+                description : "The virtual persona of Massimo Albarello",
                 securityDefinitions: { 
                     "": { 
                         "scheme": "" 
@@ -29,25 +27,16 @@ export class WotDevice {
                 },
                 security: "",
                 properties:{
-                    state:{
-                            description: "Current led state",
-                            type: "number"
+                    knowledgeGraph:{
+                            description: "Knowledge graph constructed as the user interacts with WoT devices",
+                            type: "object"
                     }
-                },
-                actions:{
-                    toggle:{
-                        description: "Toggle the state of the led",	
-                        output:{
-							type: "string"
-						}
-                    },
                 }
             }
         ).then((exposedThing)=>{
             this.thing = exposedThing;
             this.td = exposedThing.getThingDescription();
             this.add_properties();
-            this.add_actions();
             this.thing.expose();
             if (tdDirectory) { this.register(tdDirectory); }
         });
@@ -68,34 +57,16 @@ export class WotDevice {
         });
     }
 
-    private statePropertyHandler(){
+    private knowledgeGraphWriteHandler(res) {
         return new Promise((resolve, reject) => {
-            led.read().then(state => {
-                console.log("Current state of the led: " + state)
-                resolve(state)
-            })
-        });
-    }
-
-    private toggleActionHandler(){
-        return new Promise((resolve, reject) => {
-            led.read().then(state => {
-                state = state ^ 1
-                led.write(state)
-                console.log("Led toggled to: " + state)
-            })
-            resolve("Led toggled")
-        });	
+            console.log(res)
+            resolve(res)
+        })
     }
 
     private add_properties() {
-        this.thing.writeProperty("state", 0);   // initialize led to 0
-        this.thing.readProperty("state").then(res => console.log("Initial led state: " + res)).catch(() => console.log("Error"))
-        this.thing.setPropertyReadHandler("state", this.statePropertyHandler)
-        
-    }
-
-    private add_actions() {
-        this.thing.setActionHandler("toggle", this.toggleActionHandler);
+        this.kg = {}
+        this.thing.writeProperty("knowledgeGraph", this.kg);
+        this.thing.setPropertyWriteHandler("knowledgeGraph", this.knowledgeGraphWriteHandler)
     }
 }
