@@ -1,6 +1,8 @@
 import * as WoT from "wot-typescript-definitions"
 
 var request = require('request');
+const jsonfile = require('jsonfile');
+const viPerFile = 'virtualPersona.json'
 
 export class WotDevice {
     public thing: WoT.ExposedThing;
@@ -33,9 +35,10 @@ export class WotDevice {
                     }
                 }
             }
-        ).then((exposedThing)=>{
+        ).then(async (exposedThing)=>{
             this.thing = exposedThing;
             this.td = exposedThing.getThingDescription();
+            await this.getVirtualPersona();
             this.add_properties();
             this.thing.expose();
             if (tdDirectory) { this.register(tdDirectory); }
@@ -57,15 +60,21 @@ export class WotDevice {
         });
     }
 
+    private async getVirtualPersona() {
+        this.kg = await jsonfile.readFile(viPerFile)
+        console.log("VP loaded from file: ")
+        console.log(this.kg);
+    }
+
     private knowledgeGraphWriteHandler(res) {
         return new Promise((resolve, reject) => {
             console.log(res)
+            jsonfile.writeFile(viPerFile, res, (err) => console.log(err));
             resolve(res)
         })
     }
 
     private add_properties() {
-        this.kg = {}
         this.thing.writeProperty("knowledgeGraph", this.kg);
         this.thing.setPropertyWriteHandler("knowledgeGraph", this.knowledgeGraphWriteHandler)
     }
