@@ -6,7 +6,6 @@ let servientLed = new Servient();
 let servientHumTemp = new Servient();
 let servientViPer = new Servient();
 
-
 servientButton.addClientFactory(new HttpClientFactory(null));
 servientLed.addClientFactory(new HttpClientFactory(null));
 servientHumTemp.addClientFactory(new HttpClientFactory(null));
@@ -16,7 +15,6 @@ let buttonHelper = new Helpers(servientButton);
 let ledHelper = new Helpers(servientLed);
 let humTempHelper = new Helpers(servientHumTemp);
 let viPerHelper = new Helpers(servientViPer);
-
 
 // here is where the discovery of devices nearby happens
 const buttonThingAddress = "http://localhost:8080/button"
