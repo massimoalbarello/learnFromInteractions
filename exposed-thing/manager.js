@@ -63,31 +63,31 @@ async function snapshot(off2on, humTemp, viPer) {
     log("Snapshot taken", "\"")
     log("Humidity: " + state["humidity"], "^")
     log("Temperature: " + state["temperature"], "^")
-    kg = await viPer.readProperty('knowledgeGraph');
+    snapshots = await viPer.readProperty('snapshots');
     if (off2on === 0) {
         // led was ON and was turned OFF
-        if (! kg.hasOwnProperty("ledTurnedOff")) {
-            kg["ledTurnedOff"] = {
+        if (! snapshots.hasOwnProperty("ledTurnedOff")) {
+            snapshots["ledTurnedOff"] = {
                 "humidity": [],
                 "temperature": []
             };
         }
-        kg["ledTurnedOff"]["humidity"].push(state["humidity"])
-        kg["ledTurnedOff"]["temperature"].push(state["temperature"])
+        snapshots["ledTurnedOff"]["humidity"].push(state["humidity"])
+        snapshots["ledTurnedOff"]["temperature"].push(state["temperature"])
     }
     else {
         // led was OFF and was turned ON
-        if (! kg.hasOwnProperty("ledTurnedOn")) {
-            kg["ledTurnedOn"] = {
+        if (! snapshots.hasOwnProperty("ledTurnedOn")) {
+            snapshots["ledTurnedOn"] = {
                 "humidity": [],
                 "temperature": []
             };
         }
-        kg["ledTurnedOn"]["humidity"].push(state["humidity"])
-        kg["ledTurnedOn"]["temperature"].push(state["temperature"])
+        snapshots["ledTurnedOn"]["humidity"].push(state["humidity"])
+        snapshots["ledTurnedOn"]["temperature"].push(state["temperature"])
     }
-    log(kg, "@")
-    viPer.writeProperty('knowledgeGraph', kg);
+    log(snapshots, "@")
+    viPer.writeProperty('snapshots', snapshots);
 }
 
 function log(value, separator) {

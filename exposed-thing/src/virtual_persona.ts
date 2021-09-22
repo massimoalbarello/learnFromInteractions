@@ -2,13 +2,13 @@ import * as WoT from "wot-typescript-definitions"
 
 var request = require('request');
 const jsonfile = require('jsonfile');
-const viPerFile = 'virtualPersona.json'
+const snapshotsFile = 'snapshots.json'
 
 export class WotDevice {
     public thing: WoT.ExposedThing;
     public WoT: WoT.WoT;
     public td: any;
-    public kg: object;
+    public snapshots: object;
     constructor(WoT: WoT.WoT, tdDirectory?: string) {
         //create WotDevice as a server
         this.WoT = WoT;
@@ -29,8 +29,8 @@ export class WotDevice {
                 },
                 security: "",
                 properties:{
-                    knowledgeGraph:{
-                            description: "Knowledge graph constructed as the user interacts with WoT devices",
+                    snapshots:{
+                            description: "Snapshots of the interactions between user and WoT devices",
                             type: "object"
                     }
                 }
@@ -61,21 +61,21 @@ export class WotDevice {
     }
 
     private async getVirtualPersona() {
-        this.kg = await jsonfile.readFile(viPerFile)
-        console.log("VP loaded from file: ")
-        console.log(this.kg);
+        this.snapshots = await jsonfile.readFile(snapshotsFile)
+        console.log("Snapshots of interactions loaded from file: ")
+        console.log(this.snapshots);
     }
 
-    private knowledgeGraphWriteHandler(res) {
+    private snapshotsWriteHandler(res) {
         return new Promise((resolve, reject) => {
             console.log(res)
-            jsonfile.writeFile(viPerFile, res, (err) => console.log(err));
+            jsonfile.writeFile(snapshotsFile, res, (err) => console.log(err));
             resolve(res)
         })
     }
 
     private add_properties() {
-        this.thing.writeProperty("knowledgeGraph", this.kg);
-        this.thing.setPropertyWriteHandler("knowledgeGraph", this.knowledgeGraphWriteHandler)
+        this.thing.writeProperty("snapshots", this.snapshots);
+        this.thing.setPropertyWriteHandler("snapshots", this.snapshotsWriteHandler)
     }
 }

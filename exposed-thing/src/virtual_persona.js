@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var request = require('request');
 var jsonfile = require('jsonfile');
-var viPerFile = 'virtualPersona.json';
+var snapshotsFile = 'snapshots.json';
 var WotDevice = /** @class */ (function () {
     function WotDevice(WoT, tdDirectory) {
         var _this = this;
@@ -61,8 +61,8 @@ var WotDevice = /** @class */ (function () {
             },
             security: "",
             properties: {
-                knowledgeGraph: {
-                    description: "Knowledge graph constructed as the user interacts with WoT devices",
+                snapshots: {
+                    description: "Snapshots of the interactions between user and WoT devices",
                     type: "object"
                 }
             }
@@ -108,26 +108,26 @@ var WotDevice = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         _a = this;
-                        return [4 /*yield*/, jsonfile.readFile(viPerFile)];
+                        return [4 /*yield*/, jsonfile.readFile(snapshotsFile)];
                     case 1:
-                        _a.kg = _b.sent();
-                        console.log("VP loaded from file: ");
-                        console.log(this.kg);
+                        _a.snapshots = _b.sent();
+                        console.log("Snapshots of interactions loaded from file: ");
+                        console.log(this.snapshots);
                         return [2 /*return*/];
                 }
             });
         });
     };
-    WotDevice.prototype.knowledgeGraphWriteHandler = function (res) {
+    WotDevice.prototype.snapshotsWriteHandler = function (res) {
         return new Promise(function (resolve, reject) {
             console.log(res);
-            jsonfile.writeFile(viPerFile, res, function (err) { return console.log(err); });
+            jsonfile.writeFile(snapshotsFile, res, function (err) { return console.log(err); });
             resolve(res);
         });
     };
     WotDevice.prototype.add_properties = function () {
-        this.thing.writeProperty("knowledgeGraph", this.kg);
-        this.thing.setPropertyWriteHandler("knowledgeGraph", this.knowledgeGraphWriteHandler);
+        this.thing.writeProperty("snapshots", this.snapshots);
+        this.thing.setPropertyWriteHandler("snapshots", this.snapshotsWriteHandler);
     };
     return WotDevice;
 }());
