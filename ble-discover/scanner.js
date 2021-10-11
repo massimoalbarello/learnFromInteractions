@@ -5,6 +5,7 @@ const fs = require('fs');
 
 var localVPs = {};  // json storing the values sensed from the near by Thunderboards
 
+const thresh = -10000   // threshold to determine local VPs
 const servicesUUID = [];  // looking for all services
 const manufacturerId = "4700";  // scan for devices with this manufacturer ID
 
@@ -17,26 +18,49 @@ noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from th
 noble.on('discover', async (peripheral) => {
     
     var data = peripheral.advertisement.manufacturerData;
+    var address = peripheral.address;
+    var timestamp = Date.now()
 
     if (isVP(data)) {
         console.log("\nPower level:", peripheral.rssi)
-
-        var timestamp = Date.now()
-        var snapshot = vpSnapshot(data, peripheral.address);
-        if (localVPs.hasOwnProperty(peripheral.address)) {
-            localVPs[peripheral.address][timestamp] = snapshot;
+        if (isNearBy(peripheral.rssi)) {
+            updateVP(data, address, timestamp);
         }
         else {
-            localVPs[peripheral.address] = {};
-            localVPs[peripheral.address][timestamp] = snapshot;
+            localVPs[address]["belowThresh"] = localVPs[address]["belowThresh"] + 1;
+            if (localVPs[address]["belowThresh"] < 3) {
+                updateVP(data, address, timestamp);
+            }
+            else {
+                vpIsAway(address)
+            }
         }
     }
 });
 
 
 
-function isVP(data) {
-    return data && data.slice(0, 2).toString("hex") == manufacturerId
+function vpIsAway(address) {
+    console.log("\n[" + address + "]: VP not in this room.")
+    localVPs[address]["nearBy"] = false;
+}
+
+
+
+function updateVP() {
+    if (isRegistered(address)) {
+        addSnapshot(data, address, timestamp);
+    }
+    else {
+        localVPs[address] = {};
+        addSnapshot(data, address, timestamp);
+    }
+}
+
+function addSnapshot(data, address, timestamp) {
+    localVPs[address][timestamp] = vpSnapshot(data, address);
+    localVPs[address]["belowThresh"] = 0;
+    localVPs[address]["nearBy"] = true;
 }
 
 function vpSnapshot(data, address) {
@@ -64,9 +88,21 @@ function vpSnapshot(data, address) {
     return snapshot;
 }
 
-
-
 function listenForAction(address) {
     console.log("\n[" + address + "]: about to do an action!");
     // start recording data from sensors and check which device the user will interact with
+}
+
+
+
+function isVP(data) {
+    return data && data.slice(0, 2).toString("hex") == manufacturerId
+}
+
+function isNearBy(rssi) {
+    return rssi > thresh
+}
+
+function isRegistered(address) {
+    return localVPs.hasOwnProperty(address)
 }
