@@ -1,26 +1,24 @@
-const Worker = require("tiny-worker");
 const fs = require("fs")
 const merge = require("deepmerge2");
+const scanner = require("./scanner.js")
 
 const VPfile = "./virtual-personas.json"
 
-var oldVPjson = fs.readFileSync(VPfile, "utf-8");
+var oldVPobj = fs.readFileSync(VPfile, "utf-8");
+var oldVPjson = JSON.parse(oldVPobj);
 // console.log("\n########### old json ###########")
 // console.log(oldVPjson);
 
-const worker = new Worker("scanner.js");
- 
-worker.onmessage = function (ev) {
 
-    // merge received json with oldVPobj 
-    var updateVPjson = ev.data;
-    console.log("\n########### update json ###########")
-    console.log(updateVPjson);
+async function updateVPhistory(updateVPjson) {
+
+    // console.log("\n########### update json ###########")
+    // console.log(updateVPjson);
 
     var newVPjson = merge(oldVPjson, updateVPjson)
+    console.log("\n########### new json ###########")
+    console.log(newVPjson);
     var newVPobj = JSON.stringify(newVPjson);
-    // console.log("\n########### new json ###########")
-    // console.log(newVPjson);
     fs.writeFile(VPfile, newVPobj, (err) => {
         if (err) {
             console.log("Error while writing file", err);
@@ -32,4 +30,4 @@ worker.onmessage = function (ev) {
     oldVPjson = newVPjson;
 };
  
-worker.postMessage("\nStart recording");
+scanner.scan("Start scanning", updateVPhistory);

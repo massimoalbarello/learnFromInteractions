@@ -1,7 +1,7 @@
 const noble = require('@abandonware/noble');
         
 
-onmessage = function(ev) {
+exports.scan = function(message, updateVPhistory) {
     var localVPs = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
@@ -10,7 +10,7 @@ onmessage = function(ev) {
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
 
 
-    console.log(ev.data)
+    console.log(message);
 
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
 
@@ -40,7 +40,7 @@ onmessage = function(ev) {
             if (count === 3){
                 count = 0;
                 console.log("\nUpdating history...")
-                postMessage(localVPs);
+                updateVPhistory({...localVPs});
                 localVPs = {};
             }
         }
@@ -82,7 +82,7 @@ onmessage = function(ev) {
             "humidity": data.readUInt16LE(4),
             "lux": data.readUInt16LE(6),
             // "uvi": data.readUInt16LE(8),
-            // "hall": data.readUInt16LE(10),
+            "hall": data.readUInt16LE(10),
             // "sound": data.readUInt16LE(12),
             // "pressure": data.readUInt16LE(14),
             // "co2": data.readUInt16LE(16),
