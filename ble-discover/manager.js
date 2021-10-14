@@ -1,6 +1,7 @@
 const fs = require("fs")
 const merge = require("deepmerge2");
 const scanner = require("./scanner.js")
+const _ = require("underscore")
 
 const VPfile = "./virtual-personas.json"
 
@@ -8,7 +9,6 @@ var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
 // console.log("\n########### old json ###########")
 // console.log(oldVPjson);
-
 
 async function updateVPhistory(updateVPjson) {
 

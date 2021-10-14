@@ -2,10 +2,10 @@ const noble = require('@abandonware/noble');
         
 
 exports.scan = function(message, updateVPhistory) {
-    var localVPs = {};  // json storing the values sensed from the near by Thunderboards
+    var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
-    const thresh = -10000   // threshold to determine local VPs
+    const thresh = -33   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
 
@@ -25,23 +25,17 @@ exports.scan = function(message, updateVPhistory) {
         if (isVP(data, manufacturerId)) {
             console.log("\nPower level:", peripheral.rssi)
             if (isNearBy(peripheral.rssi, thresh)) {
-                updateVP(data, address, timestamp);
+                updateLocalVPsnapshots(data, address, timestamp);
+                count = count + 1;
+                if (count === 3){
+                    count = 0;
+                    console.log("\nUpdating history...")
+                    updateVPhistory({...VPsnapshotsUpdate});
+                    VPsnapshotsUpdate = {};
+                }
             }
             else {
-                localVPs[address]["belowThresh"] = localVPs[address]["belowThresh"] + 1;
-                if (localVPs[address]["belowThresh"] < 3) {
-                    updateVP(data, address, timestamp);
-                }
-                else {
-                    vpIsAway(address)
-                }
-            }
-            count = count + 1;
-            if (count === 3){
-                count = 0;
-                console.log("\nUpdating history...")
-                updateVPhistory({...localVPs});
-                localVPs = {};
+                vpIsAway(address)
             }
         }
     });
@@ -49,25 +43,22 @@ exports.scan = function(message, updateVPhistory) {
         
     function vpIsAway(address) {
         console.log("\n[" + address + "]: VP not in this room.")
-        localVPs[address]["nearBy"] = false;
     }
 
 
 
-    function updateVP(data, address, timestamp) {
+    function updateLocalVPsnapshots(data, address, timestamp) {
         if (isRegistered(address)) {
             addSnapshot(data, address, timestamp);
         }
         else {
-            localVPs[address] = {};
+            VPsnapshotsUpdate[address] = {};
             addSnapshot(data, address, timestamp);
         }
     }
 
     function addSnapshot(data, address, timestamp) {
-        localVPs[address][timestamp] = vpSnapshot(data, address);
-        // localVPs[address]["belowThresh"] = 0;
-        // localVPs[address]["nearBy"] = true;
+        VPsnapshotsUpdate[address][timestamp] = vpSnapshot(data, address);
     }
 
     function vpSnapshot(data, address) {
@@ -111,7 +102,7 @@ exports.scan = function(message, updateVPhistory) {
     }
 
     function isRegistered(address) {
-        return localVPs.hasOwnProperty(address)
+        return VPsnapshotsUpdate.hasOwnProperty(address)
     }
 
 }
