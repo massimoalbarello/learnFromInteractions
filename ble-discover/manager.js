@@ -24,10 +24,22 @@ function updateVPhistory(updateVPjson) {
             console.log("Error while writing file", err);
         }
         else {
-            console.log("\nFile written successfully")
+            // console.log("\nFile written successfully")
         }
     })
     oldVPjson = newVPjson;
 };
  
-scanner.scan("Start scanning", updateVPhistory);
+const sensorsNearBy = [
+    {
+        id: "thunderboard_086bd7fe1054",
+        measurements: ["light",]
+    },
+    {
+        id: "weather_station",
+        measurements: ["light_level",]
+    }
+]
+
+console.log("\nStart scanning")
+scanner.scan(sensorsNearBy, updateVPhistory);

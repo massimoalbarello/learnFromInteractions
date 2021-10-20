@@ -1,16 +1,14 @@
 const noble = require('@abandonware/noble');
 const influx = require('../influx-db/query_data')
 
-exports.scan = function(message, updateVPhistory) {
+exports.scan = function(sensorsNearBy, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
     const thresh = -33   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-
-
-    console.log(message);
+    
 
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
 
@@ -23,13 +21,13 @@ exports.scan = function(message, updateVPhistory) {
         var timestamp = Date.now()
 
         if (isVP(data, manufacturerId)) {
-            console.log("\nPower level:", peripheral.rssi)
+            // console.log("\nPower level:", peripheral.rssi)
             if (isNearBy(peripheral.rssi, thresh)) {
                 updateLocalVPsnapshots(data, address, timestamp);
                 count = count + 1;
                 if (count === 3){
                     count = 0;
-                    console.log("\nUpdating history...")
+                    // console.log("\nUpdating history...")
                     updateVPhistory({...VPsnapshotsUpdate});
                     VPsnapshotsUpdate = {};
                 }
@@ -42,7 +40,7 @@ exports.scan = function(message, updateVPhistory) {
 
         
     function vpIsAway(address) {
-        console.log("\n[" + address + "]: VP not in this room.")
+        // console.log("\n[" + address + "]: VP not in this room.")
     }
 
 
@@ -62,7 +60,7 @@ exports.scan = function(message, updateVPhistory) {
     }
 
     function vpSnapshot(data, address, timestamp) {
-        console.log("\n[" + address + "]: received new data.");
+        // console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
             listenForAction(address, timestamp);
@@ -81,7 +79,7 @@ exports.scan = function(message, updateVPhistory) {
             // "battery": data.readUInt8(20),
             // "id": data.readUInt8(21),
         };
-        console.log(snapshot);
+        // console.log(snapshot);
 
         return snapshot;
     }
@@ -89,7 +87,11 @@ exports.scan = function(message, updateVPhistory) {
     function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
         // start recording data from sensors and check which device the user will interact with
-        influx.db(measurement="light", sensor="thunderboard_086bd7fe1054", limit="LIMIT 3", timestamp=timestamp)
+        sensorsNearBy.forEach(sensor => {
+            sensor["measurements"].forEach(measurement => {
+                influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp)
+            })
+        })
     }
 
     function isVP(data) {
