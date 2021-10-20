@@ -5,7 +5,7 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
-    const thresh = -33   // threshold to determine local VPs
+    const thresh = -100   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     
@@ -86,10 +86,12 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
 
     function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
+        var sensorsValues = {};
         // start recording data from sensors and check which device the user will interact with
         sensorsNearBy.forEach(sensor => {
-            sensor["measurements"].forEach(measurement => {
-                influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp)
+            sensor["measurements"].forEach(async measurement => {
+                sensorsValues[sensor["id"]]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
+                console.log("\n[" + sensor["id"] + "] : " + measurement + "\n", sensorsValues[sensor["id"]]);
             })
         })
     }

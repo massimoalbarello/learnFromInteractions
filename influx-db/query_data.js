@@ -20,7 +20,10 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
         var lastValues = results[1];
         // console.log("[" + sensor_id + "]: Found: ", found);
     }
-    console.log("\n[" + sensor_id + "]: Last values: ", lastValues);
+
+    // console.log("\n[" + sensor_id + "]: Last values: ", lastValues);
+    return lastValues;
+
 
 
     function createQuery(measurement, sensor_id, limit) {
@@ -41,7 +44,7 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         else if (timeElapsed < 0) {
-                            // console.log("\n[" + sensor_id + "]: Missed measurement before action detected...")
+                            console.log("\n[" + sensor_id + "]: Missed measurement before action detected...")
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         firstValidIndex = firstValidIndex + 1;
