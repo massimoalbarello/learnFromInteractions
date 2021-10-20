@@ -87,14 +87,35 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
     function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
         var sensorsValues = {};
+        var variations = {};
         // start recording data from sensors and check which device the user will interact with
         sensorsNearBy.forEach(sensor => {
             sensor["measurements"].forEach(async measurement => {
                 sensorsValues[sensor["id"]]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
-                console.log("\n[" + sensor["id"] + "] : " + measurement + "\n", sensorsValues[sensor["id"]]);
+                variations["id"] = sensor["id"];
+                variations["measurement"] = measurement;
+                variations["max variation"] = maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement);
+                console.log("\n[" + variations["id"] + "]: max variation of " + variations["measurement"] + ": " + variations["max variation"]);
             })
         })
     }
+
+    function maxVariation(values, id, measurement) {
+        console.log("\n[" + id + "] : " + measurement + "\n", values);
+        var max = values[0][measurement];
+        var min = values[0][measurement];
+        values.slice(1).forEach((value) => {
+            if (value[measurement] > max) {
+                max = value[measurement];
+            }
+            if (value[measurement] < min) {
+                min = value[measurement];
+            }
+        });
+        return (max - min) / max; 
+    }
+
+
 
     function isVP(data) {
         return data && data.slice(0, 2).toString("hex") == manufacturerId
