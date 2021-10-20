@@ -1,5 +1,5 @@
 const noble = require('@abandonware/noble');
-        
+const influx = require('../influx-db/query_data')
 
 exports.scan = function(message, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
@@ -58,14 +58,14 @@ exports.scan = function(message, updateVPhistory) {
     }
 
     function addSnapshot(data, address, timestamp) {
-        VPsnapshotsUpdate[address][timestamp] = vpSnapshot(data, address);
+        VPsnapshotsUpdate[address][timestamp] = vpSnapshot(data, address, timestamp);
     }
 
-    function vpSnapshot(data, address) {
+    function vpSnapshot(data, address, timestamp) {
         console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
-            listenForAction(address);
+            listenForAction(address, timestamp);
         }
 
         const snapshot = {
@@ -86,12 +86,11 @@ exports.scan = function(message, updateVPhistory) {
         return snapshot;
     }
 
-    function listenForAction(address) {
+    function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
         // start recording data from sensors and check which device the user will interact with
+        influx.db(measurement="light", sensor="thunderboard_086bd7fe1054", limit="LIMIT 3", timestamp=timestamp)
     }
-
-
 
     function isVP(data) {
         return data && data.slice(0, 2).toString("hex") == manufacturerId
