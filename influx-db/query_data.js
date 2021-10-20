@@ -44,7 +44,7 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         else if (timeElapsed < 0) {
-                            console.log("\n[" + sensor_id + "]: Missed measurement before action detected...")
+                            // console.log("\n[" + sensor_id + "]: Missed measurement before action detected...")
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         firstValidIndex = firstValidIndex + 1;

@@ -59,11 +59,12 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         VPsnapshotsUpdate[address][timestamp] = vpSnapshot(data, address, timestamp);
     }
 
-    function vpSnapshot(data, address, timestamp) {
+    async function vpSnapshot(data, address, timestamp) {
         // console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
-            listenForAction(address, timestamp);
+            var variations = await listenForAction(address, timestamp);
+            console.log(variations);
         }
 
         const snapshot = {
@@ -84,24 +85,22 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         return snapshot;
     }
 
-    function listenForAction(address, timestamp) {
+    async function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
         var sensorsValues = {};
-        var variations = {};
+        var variations = [];
         // start recording data from sensors and check which device the user will interact with
-        sensorsNearBy.forEach(sensor => {
-            sensor["measurements"].forEach(async measurement => {
+        for (const sensor of sensorsNearBy) {
+            for (var measurement of sensor["measurements"]) {
                 sensorsValues[sensor["id"]]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
-                variations["id"] = sensor["id"];
-                variations["measurement"] = measurement;
-                variations["max variation"] = maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement);
-                console.log("\n[" + variations["id"] + "]: max variation of " + variations["measurement"] + ": " + variations["max variation"]);
-            })
-        })
+                variations.push([sensor["id"], measurement, maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement)])
+            }
+        }
+        return variations;
     }
 
     function maxVariation(values, id, measurement) {
-        console.log("\n[" + id + "] : " + measurement + "\n", values);
+        // console.log("\n[" + id + "] : " + measurement + "\n", values);
         var max = values[0][measurement];
         var min = values[0][measurement];
         values.slice(1).forEach((value) => {
