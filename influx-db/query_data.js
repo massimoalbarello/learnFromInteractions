@@ -1,5 +1,7 @@
 const Influx = require("influx")
 
+const validThreshold = 60;
+
 exports.db = async function(measurement, sensor, limit, actionTimestamp) {
     const client = new Influx.InfluxDB({
         database: 'sensor_net',
@@ -13,8 +15,11 @@ exports.db = async function(measurement, sensor, limit, actionTimestamp) {
 
     var found = false;
     while (! found) {
-        found = await findLastMeasurement()
+        results = await findLastMeasurement()
+        found = results[0];
+        var lastValues = results[1];
         console.log("Found: ", found);
+        console.log("Last values: ", lastValues);
     }
 
     function createQuery(measurement, sensor, limit) {
@@ -25,23 +30,24 @@ exports.db = async function(measurement, sensor, limit, actionTimestamp) {
         return new Promise(resolve => {
             setTimeout(() => {
                 client.query(query).then((results) => {
-                    console.log("Action timestamp: ", actionTimestamp)
                     console.log("\n" + measurement + " from: " + sensor)
+                    var firstValidIndex = 0;
                     results.reverse().forEach((res) => {
                         var sensorTimestamp = Date.parse(res.time);
                         var timeElapsed = (actionTimestamp - sensorTimestamp) / 1000;
                         console.log("Value: " + res.light + " was detected: " + timeElapsed + " seconds before action");
-                        if (timeElapsed < 20 && timeElapsed >= 0) {
-                            resolve(true);
+                        if (timeElapsed < validThreshold && timeElapsed >= 0) {
+                            resolve([true, results.slice(firstValidIndex)]);
                         }
                         else if (timeElapsed < 0) {
                             console.log("Missed measurement before action detected...")
-                            resolve(true);
+                            resolve([true, results.slice(firstValidIndex)]);
                         }
+                        firstValidIndex = firstValidIndex + 1;
                     });
-                    resolve(false);
+                    resolve([false, []]);
                 })
-            }, 5000)
+            }, 20000)
         })
     }
 }
