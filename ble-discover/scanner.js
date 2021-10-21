@@ -1,8 +1,9 @@
 const noble = require('@abandonware/noble');
 const influx = require('../influx-db/query_data');
 const math = require('mathjs');
+const fs = require("fs")
 
-
+const statFile = "./statistics.json"
 
 exports.scan = function(sensorsNearBy, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
@@ -74,7 +75,16 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
             //         console.log("\n[" + sensor + "]: variations of '" + measurement + "': " + statistics[sensor][measurement]["firstDerivs"]);
             //         console.log("\n[" + sensor + "]: stream of '" + measurement + "': \n" + statistics[sensor][measurement]["stream"][0] + "\n" + statistics[sensor][measurement]["stream"][1])
             //     })
-            // })
+            // }
+            var statObj = JSON.stringify(statistics);
+            fs.writeFile(statFile, statObj, (err) => {
+                if (err) {
+                    console.log("Error while writing file", err);
+                }
+                else {
+                    console.log("\nStatistics written successfully to file.")
+                }
+            })
         }
 
         const snapshot = {
