@@ -1,5 +1,7 @@
 const noble = require('@abandonware/noble');
-const influx = require('../influx-db/query_data')
+const influx = require('../influx-db/query_data');
+const math = require('mathjs');
+const normalize = require('array-normalize');
 
 exports.scan = function(sensorsNearBy, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
@@ -63,8 +65,8 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         // console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
-            var variations = await listenForAction(address, timestamp);
-            console.log(variations);
+            var statistics = await listenForAction(address, timestamp);
+            console.log(statistics);
         }
 
         const snapshot = {
@@ -88,15 +90,20 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
     async function listenForAction(address, timestamp) {
         console.log("\n[" + address + "]: about to do an action!");
         var sensorsValues = {};
-        var variations = [];
+        var statistics = {};
         // start recording data from sensors and check which device the user will interact with
         for (const sensor of sensorsNearBy) {
+            sensorsValues[sensor["id"]] = {};
+            statistics[sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
-                sensorsValues[sensor["id"]]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
-                variations.push([sensor["id"], measurement, maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement)])
+                sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
+                // statistics.push([sensor["id"], measurement, maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement)])
+                statistics[sensor["id"]][measurement] = {};
+                statistics[sensor["id"]][measurement]["maxVariation"] = maxVariation(sensorsValues[sensor["id"]][measurement], sensor["id"], measurement);
+                statistics[sensor["id"]][measurement]["stdev"] = stdev(sensorsValues[sensor["id"]][measurement], sensor["id"], measurement);
             }
         }
-        return variations;
+        return statistics;
     }
 
     function maxVariation(values, id, measurement) {
@@ -114,6 +121,14 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         return (max - min) / max; 
     }
 
+    function stdev(values, id, measurement) {
+        // console.log("\n[" + id + "] : " + measurement + "\n", values);
+        var val_array = [];
+        for (const value of values) {
+            val_array.push(value[measurement]);
+        }
+        return math.std(normalize(val_array));
+    }
 
 
     function isVP(data) {

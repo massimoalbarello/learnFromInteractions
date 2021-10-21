@@ -33,7 +33,7 @@ function updateVPhistory(updateVPjson) {
 const sensorsNearBy = [
     {
         id: "thunderboard_086bd7fe1054",
-        measurements: ["light",]
+        measurements: ["light", "humidity"]
     },
     {
         id: "weather_station",
