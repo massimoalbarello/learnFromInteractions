@@ -1,7 +1,8 @@
 const noble = require('@abandonware/noble');
 const influx = require('../influx-db/query_data');
 const math = require('mathjs');
-const normalize = require('array-normalize');
+
+
 
 exports.scan = function(sensorsNearBy, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
@@ -11,6 +12,7 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     
+
 
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
 
@@ -66,7 +68,13 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
 
         if (data.readUInt16LE(10) === 1) {
             var statistics = await listenForAction(address, timestamp);
-            console.log(statistics);
+            console.log("\n", statistics);
+            // Object.keys(statistics).forEach(sensor => {
+            //     Object.keys(statistics[sensor]).forEach(measurement => {
+            //         console.log("\n[" + sensor + "]: variations of '" + measurement + "': " + statistics[sensor][measurement]["firstDerivs"]);
+            //         console.log("\n[" + sensor + "]: stream of '" + measurement + "': \n" + statistics[sensor][measurement]["stream"][0] + "\n" + statistics[sensor][measurement]["stream"][1])
+            //     })
+            // })
         }
 
         const snapshot = {
@@ -96,38 +104,73 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
             sensorsValues[sensor["id"]] = {};
             statistics[sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
-                sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 10", timestamp=timestamp);
-                // statistics.push([sensor["id"], measurement, maxVariation(sensorsValues[sensor["id"]], sensor["id"], measurement)])
+                sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=timestamp);
+                var val_array = [];
+                var time_array = [];
+                for (const value of sensorsValues[sensor["id"]][measurement]) {
+                    val_array.push(value[measurement]);
+                    time_array.push(Date.parse(value["time"]));
+                }
+                var std_val_array = standardize(val_array)
+                // console.log(std_val_array);
                 statistics[sensor["id"]][measurement] = {};
-                statistics[sensor["id"]][measurement]["maxVariation"] = maxVariation(sensorsValues[sensor["id"]][measurement], sensor["id"], measurement);
-                statistics[sensor["id"]][measurement]["stdev"] = stdev(sensorsValues[sensor["id"]][measurement], sensor["id"], measurement);
+                statistics[sensor["id"]][measurement]["firstDerivs"] = firstDerivs(std_val_array, time_array);
+                statistics[sensor["id"]][measurement]["maxVariation"] = maxVariation(std_val_array);
+                statistics[sensor["id"]][measurement]["stdev"] = stdev(val_array);
+                statistics[sensor["id"]][measurement]["stream"] = stream(std_val_array, time_array);
             }
         }
         return statistics;
     }
 
-    function maxVariation(values, id, measurement) {
-        // console.log("\n[" + id + "] : " + measurement + "\n", values);
-        var max = values[0][measurement];
-        var min = values[0][measurement];
-        values.slice(1).forEach((value) => {
-            if (value[measurement] > max) {
-                max = value[measurement];
+    function standardize(values) {
+        const mean = math.mean(values);
+        const std = math.std(values);
+        let std_values = [];
+        if (std) {
+            for (const value of values) {
+                std_values.push((value - mean) / std);
             }
-            if (value[measurement] < min) {
-                min = value[measurement];
+            return std_values;
+        }
+        else {
+            return values;
+        }
+        
+    }
+
+    function firstDerivs(values, timesteps) {
+        // console.log(values);
+        // console.log(timesteps);
+        var val_diffs = values.slice(1).map((val,i) => val - values[i]);
+        // console.log(val_diffs);
+        var time_diffs = timesteps.slice(1).map((val,i) => (val - timesteps[i]) / 1000);
+        // console.log(time_diffs);
+        var first_derivs = math.dotDivide(val_diffs, time_diffs);
+        // console.log(first_derivs);
+        return first_derivs;
+    }
+
+    function maxVariation(values) {
+        var max = values[0];
+        var min = values[0];
+        values.slice(1).forEach((value) => {
+            if (value > max) {
+                max = value;
+            }
+            if (value < min) {
+                min = value;
             }
         });
         return (max - min) / max; 
     }
 
-    function stdev(values, id, measurement) {
-        // console.log("\n[" + id + "] : " + measurement + "\n", values);
-        var val_array = [];
-        for (const value of values) {
-            val_array.push(value[measurement]);
-        }
-        return math.std(normalize(val_array));
+    function stdev(values) {
+        return math.std(values);
+    }
+
+    function stream(values, timesteps) {
+        return [values, timesteps];
     }
 
 

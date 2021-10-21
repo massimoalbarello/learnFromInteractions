@@ -1,6 +1,7 @@
 const Influx = require("influx")
 
-const validThreshold = 2000;
+const validThreshold = 1000;
+const timeAfterAction = 5000;
 
 exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
     const client = new Influx.InfluxDB({
@@ -51,7 +52,7 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
                     });
                     resolve([false, []]);
                 })
-            }, 5000)
+            }, timeAfterAction)
         })
     }
 }
