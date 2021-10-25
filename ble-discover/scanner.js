@@ -1,9 +1,8 @@
 const noble = require('@abandonware/noble');
 const influx = require('../influx-db/query_data');
-const math = require('mathjs');
 const fs = require("fs")
 const gpio = require("gpio");
-const merge = require("deepmerge2");
+const statFunctions = require("./statistics");
 
 const statFile = "./statistics.json"
 
@@ -140,13 +139,13 @@ exports.scan = function(sensors, updateVPhistory) {
                     val_array.push(value[measurement]);
                     time_array.push(Date.parse(value["time"]));
                 }
-                var std_val_array = standardize(val_array)
+                var std_val_array = statFunctions.standardize(val_array);
                 // console.log(std_val_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["firstDerivs"] = firstDerivs(std_val_array, time_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVariation"] = maxVariation(std_val_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = stdev(val_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = stream(val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["firstDerivs"] = statFunctions.firstDerivs(std_val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVariation"] = statFunctions.maxVariation(std_val_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = statFunctions.stdev(val_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
             }
         }
         console.log("\nStatistics update:\n", statistics[timestamp]);
@@ -154,55 +153,6 @@ exports.scan = function(sensors, updateVPhistory) {
         return statistics;
     }
 
-    function standardize(values) {
-        const mean = math.mean(values);
-        const std = math.std(values);
-        let std_values = [];
-        if (std) {
-            for (const value of values) {
-                std_values.push((value - mean) / std);
-            }
-            return std_values;
-        }
-        else {
-            return values;
-        }
-        
-    }
-
-    function firstDerivs(values, timesteps) {
-        // console.log(values);
-        // console.log(timesteps);
-        var val_diffs = values.slice(1).map((val,i) => val - values[i]);
-        // console.log(val_diffs);
-        var time_diffs = timesteps.slice(1).map((val,i) => (val - timesteps[i]) / 1000);
-        // console.log(time_diffs);
-        var first_derivs = math.dotDivide(val_diffs, time_diffs);
-        // console.log(first_derivs);
-        return first_derivs;
-    }
-
-    function maxVariation(values) {
-        var max = values[0];
-        var min = values[0];
-        values.slice(1).forEach((value) => {
-            if (value > max) {
-                max = value;
-            }
-            if (value < min) {
-                min = value;
-            }
-        });
-        return (max - min) / max; 
-    }
-
-    function stdev(values) {
-        return math.std(values);
-    }
-
-    function stream(values, timesteps) {
-        return [values, timesteps];
-    }
 
 
     function isVP(data) {
