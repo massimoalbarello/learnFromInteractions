@@ -26,21 +26,30 @@ Object.entries(statistics[lastTimestep]["sensorsNearBy"]).forEach(sensor => {
             console.log(timestamp + " => " + time);
             return time;
         }) ];
-        var stream = measurement[1]["stream"][0];
 
-        plotFunction(measurement[1]["stream"][0], measurement[1]["stream"][1], 'stream', "{" + sensor[0] + "} [" + measurement[0] + "] of action taken at: " + actionTime);
+        var timestamp = measurement[1]["stream"][1];
+        
+        Object.entries(measurement[1]).forEach(stat => {
+            // console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]: ", stat);
+            if (stat[0] === "stream") {
+                stackPlot(stat[1][0], timestamp, "Stream {" + sensor[0] + "} [" + measurement[0] + "] of action taken at: " + actionTime)
+            }
+            else if (stat[0] === "firstDerivs") {
+                stackPlot(stat[1], timestamp, "Standardized slope between adjacent points")
+            }
+        })
+        plotlib.plot();
     })
 })
 
-function plotFunction(y, x, name, title) {
+function stackPlot(y, x, title) {
     var data = [ {
         x: x,
         y: y,
         type: 'line',
-        name: name,
     } ];
     var layout = {
-        title: title
+        title: title,
     };
-    plotlib.plot(data, layout);
+    plotlib.stack(data, layout);
 }
