@@ -15,7 +15,7 @@ function updateVPhistory(updateVPjson) {
     // console.log("\n########### update json ###########")
     // console.log(updateVPjson);
 
-    var newVPjson = merge(oldVPjson, updateVPjson)
+    var newVPjson = merge(oldVPjson, updateVPjson);
     // console.log("\n########### new json ###########")
     // console.log(newVPjson);
     var newVPobj = JSON.stringify(newVPjson);

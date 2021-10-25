@@ -2,18 +2,31 @@ const noble = require('@abandonware/noble');
 const influx = require('../influx-db/query_data');
 const math = require('mathjs');
 const fs = require("fs")
+const gpio = require("gpio");
+const merge = require("deepmerge2");
 
 const statFile = "./statistics.json"
 
-exports.scan = function(sensorsNearBy, updateVPhistory) {
+var oldStatObj = fs.readFileSync(statFile, "utf-8");
+var oldStatJson = JSON.parse(oldStatObj);
+
+exports.scan = function(sensors, updateVPhistory) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
     const thresh = -100   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-    
 
+    var gpio4 = gpio.export(4, {
+        direction: gpio.DIRECTION.OUT,
+        ready: function() {
+            // console.log("GPIO 4 set up for output");
+        }
+     });
+     gpio4.reset();
+    
+    
 
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
 
@@ -68,23 +81,24 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         // console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
-            var statistics = await listenForAction(address, timestamp);
-            console.log("\n", statistics);
-            // Object.keys(statistics).forEach(sensor => {
-            //     Object.keys(statistics[sensor]).forEach(measurement => {
-            //         console.log("\n[" + sensor + "]: variations of '" + measurement + "': " + statistics[sensor][measurement]["firstDerivs"]);
-            //         console.log("\n[" + sensor + "]: stream of '" + measurement + "': \n" + statistics[sensor][measurement]["stream"][0] + "\n" + statistics[sensor][measurement]["stream"][1])
+            var newStatJson = await listenForAction(address, timestamp, oldStatJson);
+            // console.log("\nStatistics log:\n", newStatJson);
+            // Object.keys(newStatJson[timestamp]).forEach(sensor => {
+            //     Object.keys(newStatJson[timestamp][sensor]).forEach(measurement => {
+            //         console.log("\n[" + sensor + "]: variations of '" + measurement + "': " + newStatJson[timestamp][sensor][measurement]["firstDerivs"]);
+            //         console.log("\n[" + sensor + "]: stream of '" + measurement + "': \n" + newStatJson[timestamp][sensor][measurement]["stream"][0] + "\n" + newStatJson[timestamp][sensor][measurement]["stream"][1])
             //     })
-            // }
-            var statObj = JSON.stringify(statistics);
-            fs.writeFile(statFile, statObj, (err) => {
+            // })
+            var newStatObj = JSON.stringify(newStatJson);
+            fs.writeFile(statFile, newStatObj, (err) => {
                 if (err) {
                     console.log("Error while writing file", err);
                 }
                 else {
-                    console.log("\nStatistics written successfully to file.")
+                    console.log("\nStatistics successfully written to file.")
                 }
             })
+            oldStatJson = newStatJson;
         }
 
         const snapshot = {
@@ -105,14 +119,19 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
         return snapshot;
     }
 
-    async function listenForAction(address, timestamp) {
+    async function listenForAction(address, timestamp, statistics) {
         console.log("\n[" + address + "]: about to do an action!");
+        gpio4.set();
+        setTimeout(() => gpio4.reset(), 1000);
         var sensorsValues = {};
-        var statistics = {};
+        statistics[timestamp] = {
+            "triggeredBy": address,
+            "sensorsNearBy": {}
+        };
         // start recording data from sensors and check which device the user will interact with
-        for (const sensor of sensorsNearBy) {
+        for (const sensor of sensors) {
             sensorsValues[sensor["id"]] = {};
-            statistics[sensor["id"]] = {};
+            statistics[timestamp]["sensorsNearBy"][sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
                 sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=timestamp);
                 var val_array = [];
@@ -123,13 +142,15 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
                 }
                 var std_val_array = standardize(val_array)
                 // console.log(std_val_array);
-                statistics[sensor["id"]][measurement] = {};
-                statistics[sensor["id"]][measurement]["firstDerivs"] = firstDerivs(std_val_array, time_array);
-                statistics[sensor["id"]][measurement]["maxVariation"] = maxVariation(std_val_array);
-                statistics[sensor["id"]][measurement]["stdev"] = stdev(val_array);
-                statistics[sensor["id"]][measurement]["stream"] = stream(val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["firstDerivs"] = firstDerivs(std_val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVariation"] = maxVariation(std_val_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = stdev(val_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = stream(val_array, time_array);
             }
         }
+        console.log("\nStatistics update:\n", statistics[timestamp]);
+
         return statistics;
     }
 
