@@ -142,10 +142,10 @@ exports.scan = function(sensors, updateVPhistory) {
                 var std_val_array = statFunctions.standardize(val_array);
                 // console.log(std_val_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["firstDerivs"] = statFunctions.firstDerivs(std_val_array, time_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVariation"] = statFunctions.maxVariation(std_val_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = statFunctions.stdev(val_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
             }
         }
         console.log("\nStatistics update:\n", statistics[timestamp]);
