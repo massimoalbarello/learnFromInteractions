@@ -30,7 +30,7 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
             if (isNearBy(peripheral.rssi, thresh)) {
                 updateLocalVPsnapshots(data, address, timestamp);
                 count = count + 1;
-                if (count === 3){
+                if (count === 30){
                     count = 0;
                     // console.log("\nUpdating history...")
                     updateVPhistory({...VPsnapshotsUpdate});
@@ -127,7 +127,7 @@ exports.scan = function(sensorsNearBy, updateVPhistory) {
                 statistics[sensor["id"]][measurement]["firstDerivs"] = firstDerivs(std_val_array, time_array);
                 statistics[sensor["id"]][measurement]["maxVariation"] = maxVariation(std_val_array);
                 statistics[sensor["id"]][measurement]["stdev"] = stdev(val_array);
-                statistics[sensor["id"]][measurement]["stream"] = stream(std_val_array, time_array);
+                statistics[sensor["id"]][measurement]["stream"] = stream(val_array, time_array);
             }
         }
         return statistics;

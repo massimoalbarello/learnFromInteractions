@@ -13,6 +13,7 @@
     "@abandonware/noble": "^1.9.2-14",
     "array-normalize": "^2.0.0",
     "deepmerge2": "^1.0.6",
+    "gpio": "^0.2.10",
     "mathjs": "^9.5.1",
     "underscore": "^1.13.1"
   }
