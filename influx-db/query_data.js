@@ -1,7 +1,7 @@
 const Influx = require("influx")
 
-const validThreshold = 1000;
-const timeAfterAction = 5000;
+const validThreshold = 1000;    // time in seconds of the earliest valid measurement from the action
+const timeAfterAction = 10000;   // time in milliseconds to wait after the action is detected
 
 exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
     const client = new Influx.InfluxDB({
@@ -33,6 +33,7 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
 
     function findLastMeasurement() {
         return new Promise(resolve => {
+            // console.log("\nWaiting for data up to " + timeAfterAction/1000 + " seconds after action...")
             setTimeout(() => {
                 client.query(query).then((results) => {
                     // console.log("\n[" + sensor_id + "]: " + measurement)
@@ -40,12 +41,12 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
                     results.reverse().forEach((res) => {
                         var sensorTimestamp = Date.parse(res.time);
                         var timeElapsed = (actionTimestamp - sensorTimestamp) / 1000;
-                        // console.log("[" + sensor_id + "]: " + res[measurement] + " was detected: " + timeElapsed + " seconds before action");
+                        // console.log("{" + sensor_id + "} [" + measurement + "]: " + res[measurement] + " was detected: " + timeElapsed + " seconds before action");
                         if (timeElapsed < validThreshold && timeElapsed >= 0) {
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         else if (timeElapsed < 0) {
-                            // console.log("\n[" + sensor_id + "]: Missed measurement before action detected...")
+                            // console.log("\n{" + sensor_id + "} [" + measurement + "]: Missed measurement before action detected...")
                             resolve([true, results.slice(firstValidIndex)]);
                         }
                         firstValidIndex = firstValidIndex + 1;

@@ -7,17 +7,10 @@ const VPfile = "./virtual-personas.json"
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
-// console.log("\n########### old json ###########")
-// console.log(oldVPjson);
 
 function updateVPhistory(updateVPjson) {
 
-    // console.log("\n########### update json ###########")
-    // console.log(updateVPjson);
-
     var newVPjson = merge(oldVPjson, updateVPjson);
-    // console.log("\n########### new json ###########")
-    // console.log(newVPjson);
     var newVPobj = JSON.stringify(newVPjson);
     fs.writeFile(VPfile, newVPobj, (err) => {
         if (err) {
@@ -29,6 +22,28 @@ function updateVPhistory(updateVPjson) {
     })
     oldVPjson = newVPjson;
 };
+
+function determineCorrelationToAction(timestamp, statistics) {
+    console.log("\nStatistics of " + new Date(parseInt(timestamp)));
+    Object.entries(statistics["sensorsNearBy"]).forEach(sensor => {
+        Object.entries(sensor[1]).forEach(measurement => {
+            console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
+            
+            Object.entries(measurement[1]).forEach(stat => {
+                // console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]: ", stat);
+                if (stat[0] === "stdev") {
+                    console.log(stat[0] + ": " + stat[1]);
+                }
+                else if (stat[0] === "maxVarRightBefore") {
+                    console.log(stat[0] + ": " + stat[1]);
+                }
+                else if (stat[0] === "maxVarOld") {
+                    console.log(stat[0] + ": " + stat[1]);
+                }
+            })
+        })
+    })
+}
  
 const sensorsNearBy = [
     {
@@ -42,4 +57,5 @@ const sensorsNearBy = [
 ]
 
 console.log("\nStart scanning")
-scanner.scan(sensorsNearBy, updateVPhistory);
+
+scanner.scan(sensorsNearBy, updateVPhistory, determineCorrelationToAction);

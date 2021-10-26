@@ -9,21 +9,22 @@ const statFile = "./statistics.json"
 var oldStatObj = fs.readFileSync(statFile, "utf-8");
 var oldStatJson = JSON.parse(oldStatObj);
 
-exports.scan = function(sensors, updateVPhistory) {
+exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var count = 0;
 
-    const thresh = -100   // threshold to determine local VPs
+    const thresh = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
+    const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
     var gpio4 = gpio.export(4, {
         direction: gpio.DIRECTION.OUT,
         ready: function() {
             // console.log("GPIO 4 set up for output");
         }
-     });
-     gpio4.reset();
+    });
+    gpio4.reset();
     
     
 
@@ -128,6 +129,8 @@ exports.scan = function(sensors, updateVPhistory) {
             "sensorsNearBy": {}
         };
         // start recording data from sensors and check which device the user will interact with
+
+        // !!! should get data from the db in parallel so that we have to wait for "timeAfterAction" in query_data.js only once
         for (const sensor of sensors) {
             sensorsValues[sensor["id"]] = {};
             statistics[timestamp]["sensorsNearBy"][sensor["id"]] = {};
@@ -139,20 +142,37 @@ exports.scan = function(sensors, updateVPhistory) {
                     val_array.push(value[measurement]);
                     time_array.push(Date.parse(value["time"]));
                 }
-                var std_val_array = statFunctions.standardize(val_array);
-                // console.log(std_val_array);
+                var index = indexOfAction(time_array, timestamp);   // index of the last measurement before the action was triggered
+                // console.log("Last measurement before action: " + val_array[index] + " at time: " + time_array[index])
+                var norm_val_array = statFunctions.normalize(val_array);
+                var norm_values_right_before = norm_val_array.slice(index - measurementsRightBeforeAction, index+1);
+                // console.log(norm_values_right_before);
+                var norm_values_old = norm_val_array.slice(0, index - measurementsRightBeforeAction);
+                // console.log(norm_values_old);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["firstDerivs"] = statFunctions.firstDerivs(std_val_array, time_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVariation"] = statFunctions.maxVariation(std_val_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = statFunctions.stdev(val_array);
+                // statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = statFunctions.stream(norm_val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = statFunctions.stdev(norm_val_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = statFunctions.maxVariation(norm_values_right_before);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = statFunctions.maxVariation(norm_values_old);
             }
         }
-        console.log("\nStatistics update:\n", statistics[timestamp]);
-
+        // console.log("\nStatistics update:\n", statistics[timestamp]);
+        determineCorrelationToAction(timestamp, statistics[timestamp]);
+        
         return statistics;
     }
 
+
+    function indexOfAction(time_array, timestamp) {
+        var index = 0;
+        for (const [i, time] of time_array.entries()) {
+            if (time < timestamp) {
+                index = i;
+            }
+        }
+        return index;
+    }
 
 
     function isVP(data) {

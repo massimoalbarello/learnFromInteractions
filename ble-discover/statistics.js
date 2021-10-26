@@ -16,6 +16,22 @@ module.exports.standardize = function (values) {
     
 }
 
+module.exports.normalize = function (values) {
+    const max = math.max(values);
+    const min = math.min(values);
+    let normalized_values = [];
+    if (max !== min) {
+        for (const value of values) {
+            normalized_values.push((value - min) / (max - min));
+        }
+        return normalized_values;
+    }
+    else {
+        return values;
+    }
+    
+}
+
 module.exports.firstDerivs = function(values, timesteps) {
     // console.log(values);
     // console.log(timesteps);
@@ -29,17 +45,9 @@ module.exports.firstDerivs = function(values, timesteps) {
 }
 
 module.exports.maxVariation = function(values) {
-    var max = values[0];
-    var min = values[0];
-    values.slice(1).forEach((value) => {
-        if (value > max) {
-            max = value;
-        }
-        if (value < min) {
-            min = value;
-        }
-    });
-    return (max - min) / max; 
+    var max = math.max(values);
+    var min = math.min(values);
+    return (max - min)
 }
 
 module.exports.stdev = function(values) {
