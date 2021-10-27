@@ -9,9 +9,10 @@ const statFile = "./statistics.json"
 var oldStatObj = fs.readFileSync(statFile, "utf-8");
 var oldStatJson = JSON.parse(oldStatObj);
 
-exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) {
+exports.scan = function(sensors, updateVPhistory, updateDataset) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
-    var count = 0;
+    var countVPsnapshot = 0;
+    var countSensorsSnapshots = 0;
 
     const thresh = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
@@ -42,9 +43,9 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
             // console.log("\nPower level:", peripheral.rssi)
             if (isNearBy(peripheral.rssi, thresh)) {
                 updateLocalVPsnapshots(data, address, timestamp);
-                count = count + 1;
-                if (count === 30){
-                    count = 0;
+                countVPsnapshot = countVPsnapshot + 1;
+                if (countVPsnapshot === 30){
+                    countVPsnapshot = 0;
                     // console.log("\nUpdating history...")
                     updateVPhistory({...VPsnapshotsUpdate});
                     VPsnapshotsUpdate = {};
@@ -81,14 +82,20 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
         // console.log("\n[" + address + "]: received new data.");
 
         if (data.readUInt16LE(10) === 1) {
-            var newStatJson = await listenForAction(address, timestamp, oldStatJson);
-            // console.log("\nStatistics log:\n", newStatJson);
-            // Object.keys(newStatJson[timestamp]).forEach(sensor => {
-            //     Object.keys(newStatJson[timestamp][sensor]).forEach(measurement => {
-            //         console.log("\n[" + sensor + "]: variations of '" + measurement + "': " + newStatJson[timestamp][sensor][measurement]["firstDerivs"]);
-            //         console.log("\n[" + sensor + "]: stream of '" + measurement + "': \n" + newStatJson[timestamp][sensor][measurement]["stream"][0] + "\n" + newStatJson[timestamp][sensor][measurement]["stream"][1])
-            //     })
-            // })
+            var newStatJson = await getStatsFromSensors(address, timestamp, oldStatJson);
+
+            var lastStatistics = newStatJson[timestamp];
+            console.log("\nStatistics of " + new Date(parseInt(timestamp)));
+            Object.entries(lastStatistics["sensorsNearBy"]).forEach(sensor => {
+                Object.entries(sensor[1]).forEach(measurement => {
+                    console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
+                    Object.entries(measurement[1]).forEach(stat => {
+                        console.log(stat);
+                    })
+                })
+            })
+
+
             var newStatObj = JSON.stringify(newStatJson);
             fs.writeFile(statFile, newStatObj, (err) => {
                 if (err) {
@@ -99,6 +106,12 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
                 }
             })
             oldStatJson = newStatJson;
+            countSensorsSnapshots = countSensorsSnapshots + 1;
+
+            if (countSensorsSnapshots === 3) {
+                updateDataset(newStatJson);
+                countSensorsSnapshots = 0;
+            }
         }
 
         const snapshot = {
@@ -119,16 +132,18 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
         return snapshot;
     }
 
-    async function listenForAction(address, timestamp, statistics) {
+    async function getStatsFromSensors(address, timestamp, statistics) {
         console.log("\n[" + address + "]: about to do an action!");
         gpio4.set();
         setTimeout(() => gpio4.reset(), 1000);
         var sensorsValues = {};
         statistics[timestamp] = {
             "triggeredBy": address,
-            "sensorsNearBy": {}
+            "sensorsNearBy": {},
+            "label": 1,  // set to 1 if the light was switched on by this action or to 0 if it was switched off
+
         };
-        // start recording data from sensors and check which device the user will interact with
+        // get data and statistics from sensors
 
         // !!! should get data from the db in parallel so that we have to wait for "timeAfterAction" in query_data.js only once
         for (const sensor of sensors) {
@@ -144,6 +159,8 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
                 }
                 var index = indexOfAction(time_array, timestamp);   // index of the last measurement before the action was triggered
                 // console.log("Last measurement before action: " + val_array[index] + " at time: " + time_array[index])
+                var val_array_right_before = val_array.slice(index - measurementsRightBeforeAction, index+1);
+                var val_array_old = val_array.slice(0, index - measurementsRightBeforeAction);
                 var norm_val_array = statFunctions.normalize(val_array);
                 var norm_values_right_before = norm_val_array.slice(index - measurementsRightBeforeAction, index+1);
                 // console.log(norm_values_right_before);
@@ -151,14 +168,16 @@ exports.scan = function(sensors, updateVPhistory, determineCorrelationToAction) 
                 // console.log(norm_values_old);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
                 // statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = statFunctions.stream(val_array, time_array);
-                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = statFunctions.stream(norm_val_array, time_array);
+                // statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = statFunctions.stream(norm_val_array, time_array);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = val_array[index];
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = statFunctions.mean(val_array_right_before);
+                statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanOld"] = statFunctions.mean(val_array_old);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = statFunctions.stdev(norm_val_array);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = statFunctions.maxVariation(norm_values_right_before);
                 statistics[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = statFunctions.maxVariation(norm_values_old);
             }
         }
         // console.log("\nStatistics update:\n", statistics[timestamp]);
-        determineCorrelationToAction(timestamp, statistics[timestamp]);
         
         return statistics;
     }

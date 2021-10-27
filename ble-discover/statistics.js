@@ -32,6 +32,10 @@ module.exports.normalize = function (values) {
     
 }
 
+module.exports.mean = function (values) {
+    return math.mean(values);
+}
+
 module.exports.firstDerivs = function(values, timesteps) {
     // console.log(values);
     // console.log(timesteps);

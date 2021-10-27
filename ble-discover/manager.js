@@ -1,7 +1,9 @@
-const fs = require("fs")
+const fs = require("fs");
 const merge = require("deepmerge2");
 const scanner = require("./scanner")
-const _ = require("underscore")
+const _ = require("underscore");
+const flatten = require("flat");
+const fastcsv = require('fast-csv');
 
 const VPfile = "./virtual-personas.json"
 
@@ -23,26 +25,22 @@ function updateVPhistory(updateVPjson) {
     oldVPjson = newVPjson;
 };
 
-function determineCorrelationToAction(timestamp, statistics) {
-    console.log("\nStatistics of " + new Date(parseInt(timestamp)));
-    Object.entries(statistics["sensorsNearBy"]).forEach(sensor => {
-        Object.entries(sensor[1]).forEach(measurement => {
-            console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
-            
-            Object.entries(measurement[1]).forEach(stat => {
-                // console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]: ", stat);
-                if (stat[0] === "stdev") {
-                    console.log(stat[0] + ": " + stat[1]);
-                }
-                else if (stat[0] === "maxVarRightBefore") {
-                    console.log(stat[0] + ": " + stat[1]);
-                }
-                else if (stat[0] === "maxVarOld") {
-                    console.log(stat[0] + ": " + stat[1]);
-                }
-            })
-        })
+function updateDataset(statJson) {
+    var dataset = [];
+    Object.entries(statJson).forEach(snapshot => {
+        // console.log("Triggered by: " + snapshot[1]["triggeredBy"] + " at timestamp: " + snapshot[0])
+        // console.log(flatten(snapshot[1]["sensorsNearBy"]));
+        var flatSnapshot = flatten(snapshot[1]["sensorsNearBy"]);
+        flatSnapshot["timestamp"] = snapshot[0];
+        flatSnapshot["triggeredBy"] = snapshot[1]["triggeredBy"];
+        flatSnapshot["label"] = snapshot[1]["label"];
+        // console.log(flatSnapshot);
+        dataset.push(flatSnapshot);
     })
+    const ws = fs.createWriteStream("dataset.csv");
+    fastcsv.write(dataset, { headers: true })
+           .pipe(ws);
+    
 }
  
 const sensorsNearBy = [
@@ -58,4 +56,4 @@ const sensorsNearBy = [
 
 console.log("\nStart scanning")
 
-scanner.scan(sensorsNearBy, updateVPhistory, determineCorrelationToAction);
+scanner.scan(sensorsNearBy, updateVPhistory, updateDataset);
