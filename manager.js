@@ -1,7 +1,7 @@
 const fs = require("fs");
 const merge = require("deepmerge2");
-const scanner = require("./scanner")
-const _ = require("underscore");
+const scanner = require("./ble-discover/scanner")
+// const _ = require("underscore");
 const flatten = require("flat");
 const fastcsv = require('fast-csv');
 
