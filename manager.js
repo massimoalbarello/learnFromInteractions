@@ -82,7 +82,7 @@ function candidateFound(triggerData) {
 }
 
 function setPossibleCandidate(VPdata, VPaddress, timestamp) {
-    console.log("\n[" + VPaddress + "]: possible candidate found at:" + timestamp);
+    console.log("\n[" + VPaddress + "]: possible candidate found");
     possibleCandidate = {
         "address": VPaddress,
         "data": VPdata,
