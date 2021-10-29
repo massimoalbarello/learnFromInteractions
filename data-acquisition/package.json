@@ -1,8 +1,8 @@
 {
-  "name": "ble-discover",
+  "name": "data-acquisition",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "retrieve_sensor_data.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@abandonware/noble": "^1.9.2-14",
-    "gpio": "^0.2.10"
+    "fs": "0.0.1-security",
+    "mathjs": "^9.5.1"
   }
 }

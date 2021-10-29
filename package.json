@@ -21,6 +21,7 @@
     "deepmerge2": "^1.0.6",
     "fast-csv": "^4.3.6",
     "flat": "^5.0.2",
-    "fs": "0.0.1-security"
+    "fs": "0.0.1-security",
+    "mqtt": "^4.2.8"
   }
 }
