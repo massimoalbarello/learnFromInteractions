@@ -42,6 +42,8 @@ function updateDataset(statJson) {
         // console.log("Triggered by: " + snapshot[1]["triggeredBy"] + " at timestamp: " + snapshot[0])
         // console.log(flatten(snapshot[1]["sensorsNearBy"]));
         var flatSnapshot = flatten(snapshot[1]["sensorsNearBy"]);
+        flatSnapshot["hours"] = snapshot[1]["hours"];
+        flatSnapshot["minutes"] = snapshot[1]["minutes"];
         flatSnapshot["timestamp"] = snapshot[0];
         flatSnapshot["triggeredBy"] = snapshot[1]["triggeredBy"];
         flatSnapshot["label"] = snapshot[1]["label"];

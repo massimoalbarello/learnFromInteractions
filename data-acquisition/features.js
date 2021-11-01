@@ -61,3 +61,15 @@ module.exports.stdev = function(values) {
 module.exports.stream = function(values, timesteps) {
     return [values, timesteps];
 }
+
+module.exports.hours = function(timestamp) {
+    let date = new Date(timestamp);
+    let hours = date.getHours(); 
+    return hours;
+}
+
+module.exports.minutes = function(timestamp) {
+    let date = new Date(timestamp);
+    let minutes = date.getMinutes(); 
+    return minutes;
+}
