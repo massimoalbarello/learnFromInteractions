@@ -7,8 +7,12 @@ const fastcsv = require('fast-csv');
 const scanner = require("./ble-discover/scanner");
 const trigger = require("./trigger_server");
 const sensors = require("./data-acquisition/retrieve_sensors_data");
+const buzzer = require("./feedback/buzzer").Buzzer;
 
-const VPfile = "./virtual-personas.json"
+
+
+const VPfile = "./virtual-personas.json";
+const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
@@ -71,6 +75,7 @@ function candidateFound(triggerData) {
     clearTimeout(waitForTrigger);
     waitForTrigger = "";
     console.log("Candidate: " + possibleCandidate["address"]);
+    feedbackBuzzer.doubleBeep();
     if (triggerData["state"] === "On") {
         label = 1;
     }

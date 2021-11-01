@@ -1,5 +1,6 @@
-const noble = require('@abandonware/noble');
-const gpio = require("gpio");
+const noble = require("@abandonware/noble");
+const buzzer = require("../feedback/buzzer").Buzzer;
+
 
 
 exports.scan = function(updateVPhistory, setPossibleCandidate) {
@@ -10,14 +11,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
 
-    var gpio4 = gpio.export(4, {
-        direction: gpio.DIRECTION.OUT,
-        ready: function() {
-            // console.log("GPIO 4 set up for output");
-        }
-    });
-    gpio4.reset();
-    
+    const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
     
 
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
@@ -86,8 +80,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
         // console.log(snapshot);
 
         if (snapshot["hall"] === 1) {
-            gpio4.set();
-            setTimeout(() => gpio4.reset(), 1000);
+            feedbackBuzzer.beep();
             setPossibleCandidate(snapshot, address, timestamp);
         }
 
