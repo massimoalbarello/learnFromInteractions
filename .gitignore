@@ -1,3 +1,5 @@
 node_modules/
-dataset.csv
+ganesh_lamp_dataset.csv
+iori_lamp_dataset.csv
+shared_lamp_dataset.csv
 virtual-personas.json

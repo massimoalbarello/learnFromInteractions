@@ -7,7 +7,9 @@ exports.listen = function(determineWhoTriggered) {
         req.on('data', (data) => {
             data = JSON.parse(data);
             if (data.hasOwnProperty("sentFrom") && data["sentFrom"] === "sensorPi") {
-                determineWhoTriggered(data);
+                if (data["room"] === "r402") {
+                    determineWhoTriggered(data);
+                }
             }
         })
         res.write('Thank you'); //write a response to the client

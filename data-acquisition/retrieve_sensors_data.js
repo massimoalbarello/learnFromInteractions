@@ -3,20 +3,30 @@ const fs = require("fs")
 const influx = require('../influx-db/query_data');
 const featFunctions = require("./features");
 
-const featFile = "./data-acquisition/features.json"
+const featFile = "./data-acquisition/features.json";
+const logFile = "./data-acquisition/backupLog.json";
+
 
 var oldFeatObj = fs.readFileSync(featFile, "utf-8");
 var oldFeatJson = JSON.parse(oldFeatObj);
+
+var oldLogObj = fs.readFileSync(logFile, "utf-8");
+var oldLogJson = JSON.parse(oldLogObj);
+
+
 
 var countSensorsSnapshots = 0;
 const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
 
-exports.retrieveData = async function(address, timestamp, label, sensors, updateDataset) {
+exports.retrieveData = async function(address, timestamp, triggerDevice, label, sensors, updateDataset) {
     console.log("\nGetting data from sensors...");
-    var newFeatJson = await getFeatFromSensors(address, timestamp, oldFeatJson);
+    dataObjects = await getFeatFromSensors(address, timestamp, triggerDevice, oldFeatJson, oldLogJson);
+    var newFeatJson = dataObjects[0];
+    var newLogJson = dataObjects[1];
+    
     // print newly acquired features
-    var lastFeatures = newFeatJson[timestamp];
+    var lastFeatures = newFeatJson[triggerDevice][timestamp];
     console.log("\nFeatures of " + new Date(parseInt(timestamp)));
     Object.entries(lastFeatures["sensorsNearBy"]).forEach(sensor => {
         Object.entries(sensor[1]).forEach(measurement => {
@@ -27,39 +37,26 @@ exports.retrieveData = async function(address, timestamp, label, sensors, update
         })
     })
 
-
-    var newFeatObj = JSON.stringify(newFeatJson);
-    fs.writeFile(featFile, newFeatObj, (err) => {
-        if (err) {
-            console.log("Error while writing file", err);
-        }
-        else {
-            console.log("\nFeatures successfully written to file.")
-        }
-    })
-    oldFeatJson = newFeatJson;
+    oldFeatJson = updateJsonFile(newFeatJson, featFile, "Features");
+    oldLogJson = updateJsonFile(newLogJson, logFile, "Backup log");
     countSensorsSnapshots = countSensorsSnapshots + 1;
 
     if (countSensorsSnapshots === 1) {
-        updateDataset(newFeatJson);
+        updateDataset(newFeatJson[triggerDevice], triggerDevice);
         countSensorsSnapshots = 0;
     }
 
-    async function getFeatFromSensors(address, timestamp, features) {
+    async function getFeatFromSensors(address, timestamp, triggerDevice, features, backupLog) {
         var sensorsValues = {};
-        features[timestamp] = {
-            "hours": featFunctions.hours(timestamp),
-            "minutes": featFunctions.minutes(timestamp),
-            "triggeredBy": address,
-            "sensorsNearBy": {},
-            "label": label,  // set to 1 if the light was switched on by this action or to 0 if it was switched off
-        };
+        features = initDatapoint(features, timestamp, triggerDevice);
+        backupLog = initDatapoint(backupLog, timestamp, triggerDevice);
         // get data and features from sensors
 
         // !!! should get data from the db in parallel so that we have to wait for "timeAfterAction" in query_data.js only once
         for (const sensor of sensors) {
             sensorsValues[sensor["id"]] = {};
-            features[timestamp]["sensorsNearBy"][sensor["id"]] = {};
+            features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]] = {};
+            backupLog[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
                 sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=timestamp);
                 var val_array = [];
@@ -77,20 +74,53 @@ exports.retrieveData = async function(address, timestamp, label, sensors, update
                 // console.log(norm_values_right_before);
                 var norm_values_old = norm_val_array.slice(0, index - measurementsRightBeforeAction);
                 // console.log(norm_values_old);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                // features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = featFunctions.stream(val_array, time_array);
-                // features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_val_array, time_array);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = val_array[index];
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = featFunctions.mean(val_array_right_before);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanOld"] = featFunctions.mean(val_array_old);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = featFunctions.stdev(norm_val_array);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(norm_values_right_before);
-                features[timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = featFunctions.maxVariation(norm_values_old);
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = val_array[index];
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = featFunctions.mean(val_array_right_before);
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanOld"] = featFunctions.mean(val_array_old);
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = featFunctions.stdev(norm_val_array);
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(norm_values_right_before);
+                features[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = featFunctions.maxVariation(norm_values_old);
+                
+                backupLog[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                backupLog[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = featFunctions.stream(val_array, time_array);
+                // backupLog[triggerDevice][timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_val_array, time_array);
+
+
             }
         }
-        // console.log("\nFeatures update:\n", features[timestamp]);
+        // console.log("\nFeatures update:\n", features[triggerDevice][timestamp]);
         
-        return features;
+        return [features, backupLog];
+    }
+
+
+
+    function updateJsonFile(newJson, jsonFile, name) {
+        let newObj = JSON.stringify(newJson);
+        fs.writeFile(jsonFile, newObj, (err) => {
+            if (err) {
+                console.log("Error while writing file", err);
+            }
+            else {
+                console.log("\n" + name + " successfully written to file.")
+            }
+        })
+        return newJson;
+    }
+
+    function initDatapoint(datapoint, timestamp, triggerDevice) {
+        if (! datapoint.hasOwnProperty(triggerDevice)) {
+            datapoint[triggerDevice] = {};
+        }
+        datapoint[triggerDevice][timestamp] = {
+            "hours": featFunctions.hours(timestamp),
+            "minutes": featFunctions.minutes(timestamp),
+            "triggeredBy": address,
+            "sensorsNearBy": {},
+            "label": label,  // set to 1 if the light was switched on by this action or to 0 if it was switched off
+        };
+        return datapoint;
     }
 
 

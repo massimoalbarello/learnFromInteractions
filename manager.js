@@ -36,7 +36,7 @@ function updateVPhistory(updateVPjson) {
     oldVPjson = newVPjson;
 };
 
-function updateDataset(statJson) {
+function updateDataset(statJson, triggerDevice) {
     var dataset = [];
     Object.entries(statJson).forEach(snapshot => {
         // console.log("Triggered by: " + snapshot[1]["triggeredBy"] + " at timestamp: " + snapshot[0])
@@ -50,13 +50,14 @@ function updateDataset(statJson) {
         // console.log(flatSnapshot);
         dataset.push(flatSnapshot);
     })
-    const ws = fs.createWriteStream("dataset.csv");
+    datasetName = triggerDevice + "_dataset.csv"
+    const ws = fs.createWriteStream(datasetName);
     fastcsv.write(dataset, { headers: true })
            .pipe(ws);
 }
 
 function determineWhoTriggered(triggerData) {
-    console.log("\nAction triggered")
+    console.log("\nAction triggered in: " + triggerData["room"] + " from device: " + triggerData["trigger"]);
     // check if a possible candidate had already been found and it's thus waiting for an action
     if (waitForTrigger !== "") {
         candidateFound(triggerData);
@@ -76,15 +77,28 @@ function determineWhoTriggered(triggerData) {
 function candidateFound(triggerData) {
     clearTimeout(waitForTrigger);
     waitForTrigger = "";
+    let triggerDevice = "";
+    let invalid = false;
     console.log("Candidate: " + possibleCandidate["address"]);
     feedbackBuzzer.doubleBeep();
-    if (triggerData["state"] === "On") {
-        label = 1;
+    switch (triggerData["newState"]) {
+        case "On":
+            label = 1;
+            break;
+        case "Off":
+            label = 0;
+            break;
+        default:
+            console.log("Invalid label in trigger JSON")
+            invalid = true;
+    }
+    if (! invalid) {
+        sensors.retrieveData(possibleCandidate["address"], possibleCandidate["timestamp"], triggerData["trigger"], label, sensorsNearBy, updateDataset);
     }
     else {
-        label = 0;
+        console.log("Discarding datapoint");
     }
-    sensors.retrieveData(possibleCandidate["address"], possibleCandidate["timestamp"], label, sensorsNearBy, updateDataset);
+
     possibleCandidate = "";
 }
 
