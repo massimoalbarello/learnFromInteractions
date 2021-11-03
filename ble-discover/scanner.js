@@ -6,14 +6,15 @@ const buzzer = require("../feedback/buzzer").Buzzer;
 exports.scan = function(updateVPhistory, setPossibleCandidate) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var countVPsnapshot = 0;
+    var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
 
     const thresh = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-
     const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
     
 
+    
     noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
 
 
@@ -25,16 +26,26 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
         var timestamp = Date.now()
 
         if (isVP(data, manufacturerId)) {
-            // console.log("\nPower level:", peripheral.rssi)
             if (isNearBy(peripheral.rssi, thresh)) {
-                updateLocalVPsnapshots(data, address, timestamp);
-                countVPsnapshot = countVPsnapshot + 1;
-                if (countVPsnapshot === 1){
-                    countVPsnapshot = 0;
-                    // console.log("\nUpdating history...")
-                    updateVPhistory({...VPsnapshotsUpdate});
-                    VPsnapshotsUpdate = {};
+                if (! advertisements.hasOwnProperty(address)) {
+                    advertisements[address] = [];
                 }
+                advertisements[address].push([data, address, timestamp]);
+                // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
+                setTimeout(() => {
+                    if (advertisements[address].length != 0) {
+                        var firstAdvertisement = advertisements[address][0];
+                        updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
+                        countVPsnapshot = countVPsnapshot + 1;
+                        if (countVPsnapshot === 1){
+                            countVPsnapshot = 0;
+                            // console.log("\nUpdating history...")
+                            updateVPhistory({...VPsnapshotsUpdate});
+                            VPsnapshotsUpdate = {};
+                        }
+                        advertisements[address] = [];
+                    }
+                }, 500);
             }
             else {
                 vpIsAway(address)
