@@ -5,36 +5,36 @@ const buzzer = require("../feedback/buzzer").Buzzer;
 
 exports.scan = function(updateVPhistory, setPossibleCandidate) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
-    var countVPsnapshot = 0;
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
+    var countVPsnapshot = 0;
 
-    const thresh = -100;   // threshold to determine local VPs
+    const advSignalThreshold = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-    const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
+    const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4 used to detect btn0 pressed
     
 
     
-    noble.startScanning(servicesUUID, true);    // allow multiple broadcasts from the same device
+    noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
 
 
 
     noble.on('discover', async (peripheral) => {
         
-        var data = peripheral.advertisement.manufacturerData;
-        var address = peripheral.address;
-        var timestamp = Date.now()
+        var advData = peripheral.advertisement.manufacturerData;
+        var advAddress = peripheral.address;
+        var advTimestamp = Date.now();
 
-        if (isVP(data, manufacturerId)) {
-            if (isNearBy(peripheral.rssi, thresh)) {
-                if (! advertisements.hasOwnProperty(address)) {
-                    advertisements[address] = [];
+        if (isVP(advData)) {
+            if (isNearBy(peripheral.rssi)) {
+                if (! advertisements.hasOwnProperty(advAddress)) {
+                    advertisements[advAddress] = [];
                 }
-                advertisements[address].push([data, address, timestamp]);
+                advertisements[advAddress].push([advData, advAddress, advTimestamp]);
                 // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
                 setTimeout(() => {
-                    if (advertisements[address].length != 0) {
-                        var firstAdvertisement = advertisements[address][0];
+                    if (advertisements[advAddress].length != 0) {
+                        var firstAdvertisement = advertisements[advAddress][0];    
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
                         countVPsnapshot = countVPsnapshot + 1;
                         if (countVPsnapshot === 1){
@@ -43,56 +43,56 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
                             updateVPhistory({...VPsnapshotsUpdate});
                             VPsnapshotsUpdate = {};
                         }
-                        advertisements[address] = [];
+                        advertisements[advAddress] = [];
                     }
                 }, 500);
             }
             else {
-                vpIsAway(address)
+                vpIsAway(advAddress)
             }
         }
     });
 
-    function vpIsAway(address) {
-        // console.log("\n[" + address + "]: VP not in this room.")
+    function vpIsAway(advAddress) {
+        // console.log("\n[" + advAddress + "]: VP not in this room.")
     }
 
 
 
-    function updateLocalVPsnapshots(data, address, timestamp) {
-        if (isRegistered(address)) {
-            addSnapshot(data, address, timestamp);
+    function updateLocalVPsnapshots(firstAdvData, advAddress, firstAdvTimestamp) {
+        if (isRegistered(advAddress)) {
+            addSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
         }
         else {
-            VPsnapshotsUpdate[address] = {};
-            addSnapshot(data, address, timestamp);
+            VPsnapshotsUpdate[advAddress] = {};
+            addSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
         }
     }
 
-    function addSnapshot(data, address, timestamp) {
-        VPsnapshotsUpdate[address][timestamp] = vpSnapshot(data, address, timestamp);
+    function addSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
+        VPsnapshotsUpdate[advAddress][firstAdvTimestamp] = vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
     }
 
-    async function vpSnapshot(data, address, timestamp) {
-        // console.log("\n[" + address + "]: received new data.");
+    async function vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
+        // console.log("\n[" + advAddress + "]: received new data.");
         const snapshot = {
-            "temperature": data.readInt16LE(2),
-            "humidity": data.readUInt16LE(4),
-            "lux": data.readUInt16LE(6),
-            // "uvi": data.readUInt16LE(8),
-            "hall": data.readUInt16LE(10),
-            // "sound": data.readUInt16LE(12),
-            // "pressure": data.readUInt16LE(14),
-            // "co2": data.readUInt16LE(16),
-            // "tvoc": data.readUInt16LE(18),
-            // "battery": data.readUInt8(20),
-            // "id": data.readUInt8(21),
+            "temperature": firstAdvData.readInt16LE(2),
+            "humidity": firstAdvData.readUInt16LE(4),
+            "lux": firstAdvData.readUInt16LE(6),
+            // "uvi": firstAdvData.readUInt16LE(8),
+            "hall": firstAdvData.readUInt16LE(10),
+            // "sound": firstAdvData.readUInt16LE(12),
+            // "pressure": firstAdvData.readUInt16LE(14),
+            // "co2": firstAdvData.readUInt16LE(16),
+            // "tvoc": firstAdvData.readUInt16LE(18),
+            // "battery": firstAdvData.readUInt8(20),
+            // "id": firstAdvData.readUInt8(21),
         };
         // console.log(snapshot);
 
         if (snapshot["hall"] === 1) {
             feedbackBuzzer.beep();
-            setPossibleCandidate(snapshot, address, timestamp);
+            setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);
         }
 
         return snapshot;
@@ -100,16 +100,16 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
 
 
 
-    function isVP(data) {
-        return data && data.slice(0, 2).toString("hex") == manufacturerId
+    function isVP(advData) {
+        return advData && advData.slice(0, 2).toString("hex") == manufacturerId
     }
 
     function isNearBy(rssi) {
-        return rssi > thresh
+        return rssi > advSignalThreshold
     }
 
-    function isRegistered(address) {
-        return VPsnapshotsUpdate.hasOwnProperty(address)
+    function isRegistered(advAddress) {
+        return VPsnapshotsUpdate.hasOwnProperty(advAddress)
     }
 
 }

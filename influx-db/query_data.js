@@ -3,7 +3,7 @@ const Influx = require("influx")
 const validThreshold = 1000;    // time in seconds of the earliest valid measurement from the action
 const timeAfterAction = 1000;   // time in milliseconds to wait after the action is detected
 
-exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
+exports.db = async function(measurement, sensor_id, queryLimit, actionTimestamp) {
     const client = new Influx.InfluxDB({
         database: 'sensor_net',
         host: 'interactions.ics.unisg.ch',
@@ -12,11 +12,11 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
         password: 'inthrustwetrust',
     })
 
-    var query = createQuery(measurement, sensor_id, limit)
+    var query = createQuery(measurement, sensor_id, queryLimit)
 
     var found = false;
     while (! found) {
-        results = await findLastMeasurement()
+        results = await findLastMeasurements()
         found = results[0];
         var lastValues = results[1];
         // console.log("[" + sensor_id + "]: Found: ", found);
@@ -27,11 +27,11 @@ exports.db = async function(measurement, sensor_id, limit, actionTimestamp) {
 
 
 
-    function createQuery(measurement, sensor_id, limit) {
-        return 'SELECT ' + measurement + ' FROM "sensor_net"."autogen".' + sensor_id + ' ORDER BY time DESC ' + limit
+    function createQuery(measurement, sensor_id, queryLimit) {
+        return 'SELECT ' + measurement + ' FROM "sensor_net"."autogen".' + sensor_id + ' ORDER BY time DESC ' + queryLimit
     }
 
-    function findLastMeasurement() {
+    function findLastMeasurements() {
         return new Promise(resolve => {
             // console.log("\nWaiting for data up to " + timeAfterAction/1000 + " seconds after action...")
             setTimeout(() => {

@@ -4,20 +4,20 @@ const math = require('mathjs');
 
 
 
-const statFile = "../ble-discover/statistics.json"
-
+const statFile = "../data-acquisition/backupLog.json"
+const triggerDevice = "ganesh_lamp";
 var statObj = fs.readFileSync(statFile, "utf-8");
 var statistics = JSON.parse(statObj);
 
-const lastTimestamp = Object.keys(statistics).sort().pop();
+const lastTimestamp = Object.keys(statistics[triggerDevice]).sort().pop();
 const actionTime = new Date(parseInt(lastTimestamp));
-// console.log(statistics[lastTimestamp]);
+// console.log(statistics[triggerDevice][lastTimestamp]);
 
-Object.entries(statistics[lastTimestamp]["sensorsNearBy"]).forEach(sensor => {
+Object.entries(statistics[triggerDevice][lastTimestamp]["sensorsNearBy"]).forEach(sensor => {
     Object.entries(sensor[1]).forEach(measurement => {
         console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
 
-        var time = [ measurement[1]["normStream"][1].map((timestamp) => {
+        var time = [ measurement[1]["stream"][1].map((timestamp) => {
             let date = new Date(timestamp);
             let hours = date.getHours();
             let minutes = "0" + date.getMinutes();
@@ -27,7 +27,7 @@ Object.entries(statistics[lastTimestamp]["sensorsNearBy"]).forEach(sensor => {
             return time;
         }) ];
 
-        var timestamp = measurement[1]["normStream"][1];
+        var timestamp = measurement[1]["stream"][1];
         
         Object.entries(measurement[1]).forEach(stat => {
             // console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]: ", stat);

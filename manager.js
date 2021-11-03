@@ -21,6 +21,8 @@ var waitForTrigger = "";
 var timeout = 5000;
 var label = "";
 
+
+
 function updateVPhistory(updateVPjson) {
 
     var newVPjson = merge(oldVPjson, updateVPjson);
@@ -36,24 +38,25 @@ function updateVPhistory(updateVPjson) {
     oldVPjson = newVPjson;
 };
 
-function updateDataset(statJson, triggerDevice) {
+function updateDataset(featJson, triggerDevice) {
     var dataset = [];
-    Object.entries(statJson).forEach(snapshot => {
-        // console.log("Triggered by: " + snapshot[1]["triggeredBy"] + " at timestamp: " + snapshot[0])
-        // console.log(flatten(snapshot[1]["sensorsNearBy"]));
-        var flatSnapshot = flatten(snapshot[1]["sensorsNearBy"]);
-        flatSnapshot["hours"] = snapshot[1]["hours"];
-        flatSnapshot["minutes"] = snapshot[1]["minutes"];
-        flatSnapshot["timestamp"] = snapshot[0];
-        flatSnapshot["triggeredBy"] = snapshot[1]["triggeredBy"];
-        flatSnapshot["label"] = snapshot[1]["label"];
+    Object.entries(featJson).forEach(datapoint => {
+        var snapTimestamp = datapoint[0];
+        var snapshot = datapoint[1];
+        // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + snapTimestamp)
+        // console.log(flatten(snapshot["sensorsNearBy"]));
+        var flatSnapshot = flatten(snapshot["sensorsNearBy"]);
+        flatSnapshot["hours"] = snapshot["hours"];
+        flatSnapshot["minutes"] = snapshot["minutes"];
+        flatSnapshot["timestamp"] = snapTimestamp;
+        flatSnapshot["triggeredByVP"] = snapshot["triggeredBy"];
+        flatSnapshot["label"] = snapshot["label"];
         // console.log(flatSnapshot);
         dataset.push(flatSnapshot);
     })
     datasetName = triggerDevice + "_dataset.csv"
     const ws = fs.createWriteStream(datasetName);
-    fastcsv.write(dataset, { headers: true })
-           .pipe(ws);
+    fastcsv.write(dataset, { headers: true }).pipe(ws);
 }
 
 function determineWhoTriggered(triggerData) {
@@ -77,7 +80,6 @@ function determineWhoTriggered(triggerData) {
 function candidateFound(triggerData) {
     clearTimeout(waitForTrigger);
     waitForTrigger = "";
-    let triggerDevice = "";
     let invalid = false;
     console.log("Candidate: " + possibleCandidate["address"]);
     feedbackBuzzer.doubleBeep();
@@ -102,12 +104,12 @@ function candidateFound(triggerData) {
     possibleCandidate = "";
 }
 
-function setPossibleCandidate(VPdata, VPaddress, timestamp) {
+function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
     console.log("\n[" + VPaddress + "]: possible candidate found");
     possibleCandidate = {
         "address": VPaddress,
         "data": VPdata,
-        "timestamp": timestamp
+        "timestamp": btn0Timestamp
     };
     waitForTrigger = setTimeout(() => {
         possibleCandidate = "";
