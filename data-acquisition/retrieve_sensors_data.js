@@ -1,4 +1,7 @@
-const fs = require("fs")
+const fs = require("fs");
+const parallel = require("run-parallel");
+const flatten = require("flat").flatten;
+const unflatten = require("flat").unflatten;
 
 const influx = require('../influx-db/query_data');
 const featFunctions = require("./features");
@@ -24,7 +27,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
     var VPdata = VPcandidate["data"];
     var btn0Timestamp = VPcandidate["timestamp"];
     console.log("\nGetting data from sensors...");
-    dataObjects = await getFeatFromSensors(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);
+    var dataObjects = await getSensorsValues(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);
     var newFeatJson = dataObjects[0];   // features extracted from sensors streams
     var newLogJson = dataObjects[1];    // log of the sensors streams
     
@@ -49,19 +52,43 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         countSensorsSnapshots = 0;
     }
 
-    async function getFeatFromSensors(btn0Timestamp, triggerDevice, features, backupLog) {
-        var sensorsValues = {};
+    function getSensorsValues(btn0Timestamp, triggerDevice, features, backupLog) {
+        return new Promise(resolve => {
+            var sensorsValues = {};
+
+            // get data from sensors
+            for (let sensor of sensorsNearBy) {
+                sensorsValues[sensor["id"]] = {};
+                for (let measurement of sensor["measurements"]) {
+                    sensorsValues[sensor["id"]][measurement]  = async function (callback) {
+                        var res = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
+                        callback(null, res);
+                    }
+                };
+            }
+            parallel(flatten(sensorsValues), function (err, results) {
+                if (err) {
+                    console.log("Error in parallel query");
+                }
+                else {
+                    sensorsValues = unflatten(results);                    
+                    let dataObjects = computeFeatures(sensorsValues, triggerDevice, features, backupLog);
+                    resolve(dataObjects);
+                }
+            });
+        });
+    }
+
+    function computeFeatures(sensorsValues, triggerDevice, features, backupLog) {
+
+        console.log(VPdata, btn0Timestamp);
         features = initDatapoint(features, VPdata, btn0Timestamp, triggerDevice);
         backupLog = initDatapoint(backupLog, VPdata, btn0Timestamp, triggerDevice);
-        // get data and features from sensors
-
-        // !!! should get data from the db in parallel so that we have to wait for "timeAfterAction" in query_data.js only once
+        
         for (const sensor of sensorsNearBy) {
-            sensorsValues[sensor["id"]] = {};
             features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]] = {};
             backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
-                sensorsValues[sensor["id"]][measurement]  = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
                 var valuesStream = [];
                 var timestampsStream = [];
                 for (const value of sensorsValues[sensor["id"]][measurement]) {
@@ -88,12 +115,9 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
                 backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = featFunctions.stream(valuesStream, timestampsStream);
                 // backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_valuesStream, timestampsStream);
-
-
             }
         }
-        // console.log("\nFeatures update:\n", features[triggerDevice][btn0Timestamp]);
-        
+
         return [features, backupLog];
     }
 
