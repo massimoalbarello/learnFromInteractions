@@ -46,15 +46,19 @@ function updateDataset(featJson, triggerDevice) {
         // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + snapTimestamp)
         // console.log(flatten(snapshot["sensorsNearBy"]));
         var flatSnapshot = flatten(snapshot["sensorsNearBy"]);
+        flatSnapshot["VP.temperature"] = snapshot["VP.temperature"];
+        flatSnapshot["VP.humidity"] = snapshot["VP.humidity"];
+        flatSnapshot["VP.lux"] = snapshot["VP.lux"];
+        flatSnapshot["VP.hall"] = snapshot["VP.hall"];
         flatSnapshot["hours"] = snapshot["hours"];
         flatSnapshot["minutes"] = snapshot["minutes"];
         flatSnapshot["timestamp"] = snapTimestamp;
-        flatSnapshot["triggeredByVP"] = snapshot["triggeredBy"];
+        flatSnapshot["triggeredByVP"] = snapshot["triggeredByVP"];
         flatSnapshot["label"] = snapshot["label"];
         // console.log(flatSnapshot);
         dataset.push(flatSnapshot);
     })
-    datasetName = triggerDevice + "_dataset.csv"
+    datasetName = triggerDevice + "_dataset.csv";
     const ws = fs.createWriteStream(datasetName);
     fastcsv.write(dataset, { headers: true }).pipe(ws);
 }
@@ -95,7 +99,7 @@ function candidateFound(triggerData) {
             invalid = true;
     }
     if (! invalid) {
-        sensors.retrieveData(possibleCandidate["address"], possibleCandidate["timestamp"], triggerData["trigger"], label, sensorsNearBy, updateDataset);
+        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, updateDataset);
     }
     else {
         console.log("Discarding datapoint");

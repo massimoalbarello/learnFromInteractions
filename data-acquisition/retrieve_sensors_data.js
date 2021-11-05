@@ -19,7 +19,10 @@ var countSensorsSnapshots = 0;
 const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
 
-exports.retrieveData = async function(VPaddress, btn0Timestamp, triggerDevice, label, sensorsNearBy, updateDataset) {
+exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, updateDataset) {
+    var VPaddress = VPcandidate["address"];
+    var VPdata = VPcandidate["data"];
+    var btn0Timestamp = VPcandidate["timestamp"];
     console.log("\nGetting data from sensors...");
     dataObjects = await getFeatFromSensors(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);
     var newFeatJson = dataObjects[0];   // features extracted from sensors streams
@@ -48,8 +51,8 @@ exports.retrieveData = async function(VPaddress, btn0Timestamp, triggerDevice, l
 
     async function getFeatFromSensors(btn0Timestamp, triggerDevice, features, backupLog) {
         var sensorsValues = {};
-        features = initDatapoint(features, btn0Timestamp, triggerDevice);
-        backupLog = initDatapoint(backupLog, btn0Timestamp, triggerDevice);
+        features = initDatapoint(features, VPdata, btn0Timestamp, triggerDevice);
+        backupLog = initDatapoint(backupLog, VPdata, btn0Timestamp, triggerDevice);
         // get data and features from sensors
 
         // !!! should get data from the db in parallel so that we have to wait for "timeAfterAction" in query_data.js only once
@@ -109,17 +112,20 @@ exports.retrieveData = async function(VPaddress, btn0Timestamp, triggerDevice, l
         return newJson;
     }
 
-    function initDatapoint(datapoint, btn0Timestamp, triggerDevice) {
+    function initDatapoint(datapoint, VPdata, btn0Timestamp, triggerDevice) {
         if (! datapoint.hasOwnProperty(triggerDevice)) {
             datapoint[triggerDevice] = {};
         }
-        datapoint[triggerDevice][btn0Timestamp] = {
-            "hours": featFunctions.hours(btn0Timestamp),
-            "minutes": featFunctions.minutes(btn0Timestamp),
-            "triggeredByVP": VPaddress,
-            "sensorsNearBy": {},
-            "label": label,  // set to 1 if the light was switched on by this action or to 0 if it was switched off
-        };
+        datapoint[triggerDevice][btn0Timestamp] = {};
+        for (const VPmeasurement of Object.keys(VPdata)) {
+            datapoint[triggerDevice][btn0Timestamp]["VP." + VPmeasurement] = VPdata[VPmeasurement];
+        }
+        datapoint[triggerDevice][btn0Timestamp]["hours"] = featFunctions.hours(btn0Timestamp);
+        datapoint[triggerDevice][btn0Timestamp]["minutes"] = featFunctions.minutes(btn0Timestamp);
+        datapoint[triggerDevice][btn0Timestamp]["triggeredByVP"] = VPaddress;
+        datapoint[triggerDevice][btn0Timestamp]["sensorsNearBy"] = {};
+        datapoint[triggerDevice][btn0Timestamp]["label"] = label;  // set to 1 if the light was switched on by this action or to 0 if it was switched off
+
         return datapoint;
     }
 
