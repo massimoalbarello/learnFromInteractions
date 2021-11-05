@@ -11,7 +11,6 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
     const advSignalThreshold = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-    const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4 used to detect btn0 pressed
     
 
     
@@ -91,7 +90,6 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
         // console.log(snapshot);
 
         if (snapshot["hall"] === 1) {
-            feedbackBuzzer.beep();
             setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);
         }
 

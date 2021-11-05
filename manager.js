@@ -17,7 +17,8 @@ const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
 var possibleCandidate = "";
-var waitForTrigger = "";
+var triggerData = "";
+var waitForCandidate = "";
 var timeout = 5000;
 var label = "";
 
@@ -63,27 +64,44 @@ function updateDataset(featJson, triggerDevice) {
     fastcsv.write(dataset, { headers: true }).pipe(ws);
 }
 
-function determineWhoTriggered(triggerData) {
-    console.log("\nAction triggered in: " + triggerData["room"] + " from device: " + triggerData["trigger"]);
-    // check if a possible candidate had already been found and it's thus waiting for an action
-    if (waitForTrigger !== "") {
-        candidateFound(triggerData);
+function determineWhoTriggered(data) {
+    feedbackBuzzer.beep();
+    console.log("\nAction triggered in: " + data["room"] + " from device: " + data["trigger"]);
+    triggerData = data;
+    waitForCandidate = setTimeout(() => {
+        triggerData = "";
+        waitForCandidate = "";
+        console.log("No candidate found")
+    }, timeout);    
+}
+
+function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
+    console.log("\n[" + VPaddress + "]: possible candidate found");
+    possibleCandidate = {
+        "address": VPaddress,
+        "data": VPdata,
+        "timestamp": btn0Timestamp
+    };
+    if (waitForCandidate !== "") {
+        candidateFound(possibleCandidate);
     }
     else {
         setTimeout(() => {
-            if (possibleCandidate !== "") {
-                candidateFound(triggerData);
+            if (triggerData !== "") {
+                candidateFound(possibleCandidate);
             }
             else {
-                console.log("Couldn't find any candidate")
+                possibleCandidate = "";
+                console.log("Couldn't find any action");
             }
         }, timeout)
     }
 }
 
-function candidateFound(triggerData) {
-    clearTimeout(waitForTrigger);
-    waitForTrigger = "";
+
+function candidateFound() {
+    clearTimeout(waitForCandidate);
+    waitForCandidate = "";
     let invalid = false;
     console.log("Candidate: " + possibleCandidate["address"]);
     feedbackBuzzer.doubleBeep();
@@ -104,23 +122,8 @@ function candidateFound(triggerData) {
     else {
         console.log("Discarding datapoint");
     }
-
+    triggerData = "";
     possibleCandidate = "";
-}
-
-function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
-    console.log("\n[" + VPaddress + "]: possible candidate found");
-    possibleCandidate = {
-        "address": VPaddress,
-        "data": VPdata,
-        "timestamp": btn0Timestamp
-    };
-    waitForTrigger = setTimeout(() => {
-        possibleCandidate = "";
-        console.log("No action found")
-        waitForTrigger = "";
-    }, timeout)
-
 }
  
 const sensorsNearBy = [

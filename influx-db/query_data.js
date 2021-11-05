@@ -1,7 +1,7 @@
 const Influx = require("influx")
 
 const validThreshold = 1000;    // time in seconds of the earliest valid measurement from the action
-const timeAfterAction = 10000;   // time in milliseconds to wait after the action is detected
+const timeAfterAction = 5000;   // time in milliseconds to wait after the action is detected
 
 const client = new Influx.InfluxDB({
     database: 'sensor_net',

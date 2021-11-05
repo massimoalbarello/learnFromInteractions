@@ -19,6 +19,8 @@ var oldLogJson = JSON.parse(oldLogObj);
 
 
 var countSensorsSnapshots = 0;
+
+// the measurements right before should depend on their timestamps, not a given number of values before the action
 const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
 
@@ -81,7 +83,6 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
 
     function computeFeatures(sensorsValues, triggerDevice, features, backupLog) {
 
-        console.log(VPdata, btn0Timestamp);
         features = initDatapoint(features, VPdata, btn0Timestamp, triggerDevice);
         backupLog = initDatapoint(backupLog, VPdata, btn0Timestamp, triggerDevice);
         
