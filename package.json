@@ -18,10 +18,17 @@
   },
   "homepage": "https://github.com/massimoalbarello/omnia#readme",
   "dependencies": {
+    "@abandonware/noble": "^1.9.2-15",
+    "bufferutil": "^4.0.5",
     "deepmerge2": "^1.0.6",
     "fast-csv": "^4.3.6",
     "flat": "^5.0.2",
     "fs": "0.0.1-security",
-    "mqtt": "^4.2.8"
+    "gpio": "^0.2.10",
+    "influx": "^5.9.2",
+    "mathjs": "^10.0.0",
+    "mqtt": "^4.2.8",
+    "run-parallel": "^1.2.0",
+    "utf-8-validate": "^5.0.7"
   }
 }

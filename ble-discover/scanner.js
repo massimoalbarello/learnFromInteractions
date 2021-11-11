@@ -17,7 +17,6 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
     noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
 
 
-
     noble.on('discover', async (peripheral) => {
         
         var advData = peripheral.advertisement.manufacturerData;
