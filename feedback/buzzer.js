@@ -24,4 +24,9 @@ exports.Buzzer = class {
         setTimeout(() => this.buzzer.reset(), 300);
     }
 
+    alarm() {
+        this.buzzer.set();
+        setTimeout(() => this.buzzer.reset(), 2000);
+        setTimeout(() => this.alarm(), 4000);
+    }
 }

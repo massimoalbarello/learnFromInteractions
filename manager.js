@@ -25,12 +25,12 @@ var label = "";
 
 
 function updateVPhistory(updateVPjson) {
-
     var newVPjson = merge(oldVPjson, updateVPjson);
     var newVPobj = JSON.stringify(newVPjson);
     fs.writeFile(VPfile, newVPobj, (err) => {
         if (err) {
             console.log("Error while writing file", err);
+            feedbackBuzzer.alarm()
         }
         else {
             // console.log("\nFile written successfully")
@@ -61,6 +61,10 @@ function updateDataset(featJson, triggerDevice) {
     })
     datasetName = triggerDevice + "_dataset.csv";
     const ws = fs.createWriteStream(datasetName);
+    ws.on('error', function (err) {
+        console.log("Error while creating writestream: ", err);
+        feedbackBuzzer.alarm()
+      });
     fastcsv.write(dataset, { headers: true }).pipe(ws);
 }
 

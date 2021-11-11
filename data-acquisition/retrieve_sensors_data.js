@@ -5,10 +5,11 @@ const unflatten = require("flat").unflatten;
 
 const influx = require('../influx-db/query_data');
 const featFunctions = require("./features");
+const buzzer = require("./../feedback/buzzer").Buzzer;
 
 const featFile = "./data-acquisition/features.json";
 const logFile = "./data-acquisition/backupLog.json";
-
+const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 var oldFeatObj = fs.readFileSync(featFile, "utf-8");
 var oldFeatJson = JSON.parse(oldFeatObj);
@@ -71,6 +72,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
             parallel(flatten(sensorsValues), function (err, results) {
                 if (err) {
                     console.log("Error in parallel query");
+                    feedbackBuzzer.alarm()
                 }
                 else {
                     sensorsValues = unflatten(results);                    
@@ -129,6 +131,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         fs.writeFile(jsonFile, newObj, (err) => {
             if (err) {
                 console.log("Error while writing file", err);
+                feedbackBuzzer.alarm()
             }
             else {
                 console.log("\n" + name + " successfully written to file.")
