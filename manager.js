@@ -60,12 +60,11 @@ function updateDataset(featJson, triggerDevice) {
         dataset.push(flatSnapshot);
     })
     datasetName = triggerDevice + "_dataset.csv";
-    const ws = fs.createWriteStream(datasetName);
-    ws.on('error', function (err) {
-        console.log("Error while creating writestream: ", err);
+    fastcsv.writeToPath("./" + datasetName, dataset)
+    .on('error', (err) => {
+        console.log("Error while updating dataset", err);
         feedbackBuzzer.alarm()
-      });
-    fastcsv.write(dataset, { headers: true }).pipe(ws);
+    })
 }
 
 function determineWhoTriggered(data) {
