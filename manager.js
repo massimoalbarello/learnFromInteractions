@@ -11,7 +11,7 @@ const buzzer = require("./feedback/buzzer").Buzzer;
 
 
 
-const VPfile = "./virtual-personas.json";
+const VPfile = "./omnia/virtual-personas.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
@@ -60,7 +60,7 @@ function updateDataset(featJson, triggerDevice) {
         dataset.push(flatSnapshot);
     })
     datasetName = triggerDevice + "_dataset.csv";
-    fastcsv.writeToPath("./" + datasetName, dataset)
+    fastcsv.writeToPath("./omnia/" + datasetName, dataset)
     .on('error', (err) => {
         console.log("Error while updating dataset", err);
         feedbackBuzzer.alarm()

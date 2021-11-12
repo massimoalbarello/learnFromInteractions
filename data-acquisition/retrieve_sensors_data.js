@@ -7,8 +7,8 @@ const influx = require('../influx-db/query_data');
 const featFunctions = require("./features");
 const buzzer = require("./../feedback/buzzer").Buzzer;
 
-const featFile = "./data-acquisition/features.json";
-const logFile = "./data-acquisition/backupLog.json";
+const featFile = "./omnia/data-acquisition/features.json";
+const logFile = "./omnia/data-acquisition/backupLog.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 var oldFeatObj = fs.readFileSync(featFile, "utf-8");
