@@ -24,10 +24,10 @@
     "fast-csv": "^4.3.6",
     "flat": "^5.0.2",
     "fs": "0.0.1-security",
-    "gpio": "^0.2.10",
     "influx": "^5.9.2",
     "mathjs": "^10.0.0",
     "mqtt": "^4.2.8",
+    "onoff": "^6.0.3",
     "run-parallel": "^1.2.0",
     "utf-8-validate": "^5.0.7"
   }

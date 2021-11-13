@@ -1,32 +1,27 @@
-const gpio = require("gpio");
+const Gpio = require("onoff").Gpio;
 
 
 exports.Buzzer = class {
     constructor(pin) {
-        this.buzzer = gpio.export(pin, {
-            direction: gpio.DIRECTION.OUT,
-            ready: function() {
-                // console.log("GPIO 4 set up for output");
-            }
-        });
-        this.buzzer.reset();
+        this.buzzer = new Gpio(pin, 'out')
+        this.buzzer.write(0);
     }
 
     beep() {       
-        this.buzzer.set();
-        setTimeout(() => this.buzzer.reset(), 500);
+        this.buzzer.write(1);
+        setTimeout(() => this.buzzer.write(0), 500);
     }
 
     doubleBeep() {       
-        this.buzzer.set();
-        setTimeout(() => this.buzzer.reset(), 100);
-        setTimeout(() => this.buzzer.set(), 200);
-        setTimeout(() => this.buzzer.reset(), 300);
+        this.buzzer.write(1);
+        setTimeout(() => this.buzzer.write(0), 100);
+        setTimeout(() => this.buzzer.write(1), 200);
+        setTimeout(() => this.buzzer.write(0), 300);
     }
 
     alarm() {
-        this.buzzer.set();
-        setTimeout(() => this.buzzer.reset(), 2000);
+        this.buzzer.write(1);
+        setTimeout(() => this.buzzer.write(0), 2000);
         setTimeout(() => this.alarm(), 4000);
     }
 }
