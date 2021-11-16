@@ -35,16 +35,16 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
     var newLogJson = dataObjects[1];    // log of the sensors streams
     
     // print newly acquired features
-    var lastFeatures = newFeatJson[triggerDevice][btn0Timestamp];
-    console.log("\nFeatures of " + new Date(parseInt(btn0Timestamp)));
-    Object.entries(lastFeatures["sensorsNearBy"]).forEach(sensor => {
-        Object.entries(sensor[1]).forEach(measurement => {
-            console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
-            Object.entries(measurement[1]).forEach(feat => {
-                console.log(feat);
-            })
-        })
-    })
+    // var lastFeatures = newFeatJson[triggerDevice][btn0Timestamp];
+    // console.log("\nFeatures of " + new Date(parseInt(btn0Timestamp)));
+    // Object.entries(lastFeatures["sensorsNearBy"]).forEach(sensor => {
+    //     Object.entries(sensor[1]).forEach(measurement => {
+    //         console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
+    //         Object.entries(measurement[1]).forEach(feat => {
+    //             console.log(feat);
+    //         })
+    //     })
+    // })
 
     oldFeatJson = updateJsonFile(newFeatJson, featFile, "Features");
     oldLogJson = updateJsonFile(newLogJson, logFile, "Backup log");

@@ -1,4 +1,5 @@
 const noble = require("@abandonware/noble");
+const math = require("mathjs");
 
 
 
@@ -6,6 +7,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var countVPsnapshot = 0;
+    var lastThreeSnapshots = [{}, {}, {}];
 
     const advSignalThreshold = -100;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
@@ -87,11 +89,47 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
         };
         // console.log(snapshot);
 
-        if (snapshot["hall"] === 1) {
-            setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);
+        if (snapshot["hall"] !== 1) {
+            lastThreeSnapshots[0] = lastThreeSnapshots[1];
+            lastThreeSnapshots[1] = lastThreeSnapshots[2];
+            lastThreeSnapshots[2] = snapshot;
         }
-
+        else {
+            var avgLastThreeSnaps = averageSnapshots();
+            if (Object.keys(avgLastThreeSnaps).length !== 0) {
+                // console.log("Using average of last three snapshots before btn0 was pressed")
+                setPossibleCandidate(advAddress, avgLastThreeSnaps, firstAdvTimestamp);
+            }
+            else {
+                console.log("Haven't received any previous snapshots")
+            }
+        }
         return snapshot;
+    }
+
+    function averageSnapshots() { 
+        // calculate the average values from the up to three last snapshots received before the one with btn0 pressed    
+        var lastKVpair = lastThreeSnapshots[0]
+        var count = 1;
+        var firstValidKVpairIdx = 0;
+        for (var currentKVpair of lastThreeSnapshots.slice(1)) {
+            if (Object.keys(lastKVpair).length !== 0) {
+                lastKVpair = Object.values(lastKVpair).map((value,idx) => value + Object.values(currentKVpair)[idx]);
+                count += 1;
+            }
+            else {
+                lastKVpair = Object.values(currentKVpair);
+                firstValidKVpairIdx += 1;
+            }
+        }
+        avg = math.dotDivide(lastKVpair, count);
+
+        avgObj = {}
+        Object.keys(lastThreeSnapshots[firstValidKVpairIdx]).forEach((key, idx) => {
+            avgObj[key] = avg[idx];
+        })
+        delete avgObj["hall"];
+        return avgObj;
     }
 
 
