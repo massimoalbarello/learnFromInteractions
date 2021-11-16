@@ -7,6 +7,11 @@ exports.Buzzer = class {
         this.buzzer.write(0);
     }
 
+    start() {
+        this.doubleBeep()
+        setTimeout(() => this.doubleBeep(), 400);
+    }
+
     beep() {       
         this.buzzer.write(1);
         setTimeout(() => this.buzzer.write(0), 500);

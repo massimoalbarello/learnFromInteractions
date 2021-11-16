@@ -129,6 +129,8 @@ const sensorsNearBy = [
     }
 ]
 
+feedbackBuzzer.start()
+
 console.log("\nStart listening for triggers")
 trigger.listen(determineWhoTriggered);
 
