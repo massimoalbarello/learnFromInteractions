@@ -31,15 +31,8 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
                 // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
                 setTimeout(() => {
                     if (advertisements[advAddress].length != 0) {
-                        var firstAdvertisement = advertisements[advAddress][0];    
+                        var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
-                        countVPsnapshot = countVPsnapshot + 1;
-                        if (countVPsnapshot === 1){
-                            countVPsnapshot = 0;
-                            // console.log("\nUpdating history...")
-                            updateVPhistory({...VPsnapshotsUpdate});
-                            VPsnapshotsUpdate = {};
-                        }
                         advertisements[advAddress] = [];
                     }
                 }, 500);
@@ -68,9 +61,16 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
 
     function addSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
         VPsnapshotsUpdate[advAddress][firstAdvTimestamp] = vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
+        countVPsnapshot = countVPsnapshot + 1;
+        if (countVPsnapshot === 10){
+            countVPsnapshot = 0;
+            // console.log("\nUpdating history...")
+            updateVPhistory({...VPsnapshotsUpdate});
+            VPsnapshotsUpdate = {};
+        }
     }
 
-    async function vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
+    function vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
         // console.log("\n[" + advAddress + "]: received new data.");
         const snapshot = {
             "temperature": firstAdvData.readInt16LE(2),
