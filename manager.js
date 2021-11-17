@@ -49,7 +49,7 @@ function updateDataset(featJson, triggerDevice) {
         dataset.push(flatSnapshot);
     })
     datasetName = triggerDevice + "_dataset.csv";
-    fastcsv.writeToPath("./omnia/" + datasetName, dataset)
+    fastcsv.writeToPath("./omnia/" + datasetName, dataset, {headers: true})
     .on('error', (err) => {
         console.log("Error while updating dataset", err);
         feedbackBuzzer.alarm()

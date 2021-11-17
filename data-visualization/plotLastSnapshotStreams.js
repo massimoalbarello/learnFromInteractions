@@ -4,7 +4,7 @@ const math = require('mathjs');
 
 
 
-const statFile = "../data-acquisition/backupLog.json"
+const statFile = "./omnia/data-acquisition/backupLog.json"
 const triggerDevice = "ganesh_lamp";
 var statObj = fs.readFileSync(statFile, "utf-8");
 var statistics = JSON.parse(statObj);
@@ -17,13 +17,13 @@ Object.entries(statistics[triggerDevice][lastTimestamp]["sensorsNearBy"]).forEac
     Object.entries(sensor[1]).forEach(measurement => {
         console.log("\n{" + sensor[0] + "} [" + measurement[0] + "]");
 
-        var time = [ measurement[1]["stream"][1].map((timestamp) => {
+        var time = [ measurement[1]["stream"][1].map((timestamp, index) => {
             let date = new Date(timestamp);
             let hours = date.getHours();
             let minutes = "0" + date.getMinutes();
             let seconds = "0" + date.getSeconds();
             let time = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2)
-            console.log(timestamp + " => " + time);
+            console.log(measurement[1]["stream"][0][index] + " at " + timestamp + " => " + time);
             return time;
         }) ];
 

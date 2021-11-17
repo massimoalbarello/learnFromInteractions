@@ -30,9 +30,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
     var VPdata = VPcandidate["data"];
     var btn0Timestamp = VPcandidate["timestamp"];
     console.log("\nGetting data from sensors...");
-    var dataObjects = await getSensorsValues(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);
-    var newFeatJson = dataObjects[0];   // features extracted from sensors streams
-    var newLogJson = dataObjects[1];    // log of the sensors streams
+    var [newFeatJson, newLogJson] = await getSensorsValues(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);  // [features extracted from sensors streams, log of the sensors streams]
     
     // print newly acquired features
     // var lastFeatures = newFeatJson[triggerDevice][btn0Timestamp];
@@ -65,6 +63,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 for (let measurement of sensor["measurements"]) {
                     sensorsValues[sensor["id"]][measurement]  = async function (callback) {
                         var res = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
+                        // console.log(res);
                         callback(null, res);
                     }
                 };
@@ -95,18 +94,19 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 var valuesStream = [];
                 var timestampsStream = [];
                 for (const value of sensorsValues[sensor["id"]][measurement]) {
-                    valuesStream.push(value[measurement]);
-                    timestampsStream.push(Date.parse(value["time"]));
+                    valuesStream.push(value[measurement]);  // most recent value is the last in the array
+                    timestampsStream.push(Date.parse(value["time"]));   // most recent timestamp is the last in the array
                 }
                 var index = indexOfAction(timestampsStream, btn0Timestamp);   // index of the last measurement before the action was triggered
                 // console.log("Last measurement before action: " + valuesStream[index] + " at time: " + timestampsStream[index])
-                var valuesStream_right_before = valuesStream.slice(index - measurementsRightBeforeAction, index+1);
-                var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);
+                var valuesStream_right_before = valuesStream.slice(index - measurementsRightBeforeAction, index+1);     // most recent value is the last in the array
+                // console.log(valuesStream_right_before);
+                var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
+                // console.log(valuesStream_old);
                 var norm_valuesStream = featFunctions.normalize(valuesStream);
                 var norm_values_right_before = norm_valuesStream.slice(index - measurementsRightBeforeAction, index+1);
-                // console.log(norm_values_right_before);
                 var norm_values_old = norm_valuesStream.slice(0, index - measurementsRightBeforeAction);
-                // console.log(norm_values_old);
+                
                 features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
                 features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
                 features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = featFunctions.mean(valuesStream_right_before);
@@ -120,7 +120,9 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 // backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_valuesStream, timestampsStream);
             }
         }
-
+        features[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
+        backupLog[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
+        
         return [features, backupLog];
     }
 
