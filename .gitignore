@@ -1,6 +1,6 @@
 node_modules/
-ganesh_lamp_dataset.csv
-iori_lamp_dataset.csv
+r_400_lamp_dataset.csv
+r_402_lamp_dataset.csv
 shared_lamp_dataset.csv
 virtual-personas.json
 mqtt_test.js
@@ -10,3 +10,4 @@ data-acquisition/features.json
 data-acquisition/backupLog.json
 
 influx-db/test_query.js
+influx-db/createDB.js

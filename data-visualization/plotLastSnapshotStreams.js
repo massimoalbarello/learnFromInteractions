@@ -5,7 +5,7 @@ const math = require('mathjs');
 
 
 const statFile = "./omnia/data-acquisition/backupLog.json"
-const triggerDevice = "ganesh_lamp";
+const triggerDevice = "r_402_lamp";
 var statObj = fs.readFileSync(statFile, "utf-8");
 var statistics = JSON.parse(statObj);
 

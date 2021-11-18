@@ -3,7 +3,8 @@ const parallel = require("run-parallel");
 const flatten = require("flat").flatten;
 const unflatten = require("flat").unflatten;
 
-const influx = require('../influx-db/query_data');
+const influxQuery = require('../influx-db/query_data');
+const influxWrite = require('../influx-db/write_data');
 const featFunctions = require("./features");
 const buzzer = require("./../feedback/buzzer").Buzzer;
 
@@ -62,7 +63,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 sensorsValues[sensor["id"]] = {};
                 for (let measurement of sensor["measurements"]) {
                     sensorsValues[sensor["id"]][measurement]  = async function (callback) {
-                        var res = await influx.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
+                        var res = await influxQuery.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
                         // console.log(res);
                         callback(null, res);
                     }
@@ -123,6 +124,8 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         features[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
         backupLog[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
         
+        influxWrite.storeFeatures(triggerDevice, features[triggerDevice][btn0Timestamp]);
+
         return [features, backupLog];
     }
 
