@@ -13,6 +13,7 @@ const buzzer = require("./feedback/buzzer").Buzzer;
 
 const VPfile = "./omnia/virtual-personas.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
+const offSnapshotInterval = 30000;
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
@@ -21,6 +22,7 @@ var triggerData = "";
 var waitForCandidate = "";
 var timeout = 5000;
 var label = "";
+var offSnapshotTimeout = "";
 
 
 
@@ -52,9 +54,29 @@ function updateDataset(featJson, triggerDevice) {
     fastcsv.writeToPath("./omnia/" + datasetName, dataset, {headers: true})
     .on('error', (err) => {
         console.log("Error while updating dataset", err);
-        feedbackBuzzer.alarm()
+        feedbackBuzzer.alarm();
     })
 }
+
+
+
+function getSnapshotsLabelledOff() {
+    console.log("\nTaking off snapshot")
+    sensors.retrieveData("", "r_402_lamp", 0, sensorsNearBy, updateDataset);    // considering "r_402_lamp" as the trigger device in this room
+    offSnapshotTimeout = setTimeout(() => {
+        getSnapshotsLabelledOff();
+    }, offSnapshotInterval);
+}
+
+function stopOffSnapshotTimeout() {
+    if (offSnapshotTimeout !== "") {
+        clearTimeout(offSnapshotTimeout);
+        offSnapshotTimeout = "";
+        console.log("\nOff snapshot timeout stopped");
+    }
+}
+
+
 
 function determineWhoTriggered(data) {
     feedbackBuzzer.beep();
@@ -135,4 +157,4 @@ console.log("\nStart listening for triggers")
 trigger.listen(determineWhoTriggered);
 
 console.log("\nStart scanning for VPs")
-scanner.scan(updateVPhistory, setPossibleCandidate);
+scanner.scan(updateVPhistory, setPossibleCandidate, getSnapshotsLabelledOff, stopOffSnapshotTimeout);

@@ -3,7 +3,7 @@ const math = require("mathjs");
 
 
 
-exports.scan = function(updateVPhistory, setPossibleCandidate) {
+exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabelledOff, stopOffSnapshotTimeout) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var countVPsnapshot = 0;
@@ -16,6 +16,8 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
 
     
     noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
+
+    var presenceTimeout = setPresenceTimeout();
 
 
     noble.on('discover', async (peripheral) => {
@@ -33,20 +35,33 @@ exports.scan = function(updateVPhistory, setPossibleCandidate) {
                 // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
                 setTimeout(() => {
                     if (advertisements[advAddress].length != 0) {
+                        clearTimeout(presenceTimeout);
+                        stopOffSnapshotTimeout();
+                        console.log("Someone in the room");
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
                         advertisements[advAddress] = [];
+                        presenceTimeout = setPresenceTimeout();
                     }
                 }, 500);
             }
             else {
-                vpIsAway(advAddress)
+                vpIsAway(advAddress);
             }
         }
     });
 
     function vpIsAway(advAddress) {
         // console.log("\n[" + advAddress + "]: VP not in this room.")
+    }
+
+    // periodically check whether there are VPs in the room
+    function setPresenceTimeout() {
+        return setTimeout(() => {
+            console.log("\nNo one in the room")
+            getSnapshotsLabelledOff();
+        }
+        , 60000);
     }
 
 

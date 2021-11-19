@@ -27,9 +27,20 @@ const measurementsRightBeforeAction = 3;    // number of measurements considered
 
 
 exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, updateDataset) {
-    var VPaddress = VPcandidate["address"];
-    var VPdata = VPcandidate["data"];
-    var btn0Timestamp = VPcandidate["timestamp"];
+
+    if (VPcandidate !== "") {
+        var VPaddress = VPcandidate["address"];
+        var VPdata = VPcandidate["data"];
+        var btn0Timestamp = VPcandidate["timestamp"];
+        var presence = 1;
+    }
+    else {
+        var VPaddress = "automaticNoPresenceSnapshot"
+        var VPdata = {};
+        var btn0Timestamp = Date.now();
+        var presence = 0;
+    }
+    
     console.log("\nGetting data from sensors...");
     var [newFeatJson, newLogJson] = await getSensorsValues(btn0Timestamp, triggerDevice, oldFeatJson, oldLogJson);  // [features extracted from sensors streams, log of the sensors streams]
     
@@ -121,12 +132,12 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 // backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_valuesStream, timestampsStream);
             }
         }
-        features[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
-        backupLog[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
+        features[triggerDevice][btn0Timestamp]["someonePresent"] = presence;
+        backupLog[triggerDevice][btn0Timestamp]["someonePresent"] = presence;
         
         influxWrite.storeFlat("features", triggerDevice, btn0Timestamp, features[triggerDevice][btn0Timestamp]);
         influxWrite.storeFlat("backup", triggerDevice, btn0Timestamp, backupLog[triggerDevice][btn0Timestamp]);
-        console.log("\nData successfully stored on InfluxDB.");
+        console.log("Data successfully stored on InfluxDB.");
         
         return [features, backupLog];
     }
@@ -141,7 +152,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 feedbackBuzzer.alarm()
             }
             else {
-                console.log("\n" + name + " successfully written to file.")
+                console.log(name + " successfully written to file.")
             }
         })
         return newJson;
