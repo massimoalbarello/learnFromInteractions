@@ -3,25 +3,25 @@ const flatten = require("flat");
 
 
 
-exports.storeFeatures = function(triggerDevice, snapshot) {
+exports.storeFlat = function(dataType, triggerDevice, actionTimestamp, dataJson) {
 
     const client = new Influx.InfluxDB({
-        database: triggerDevice + "_snapshots",
+        database: triggerDevice + "_" + dataType,
         host: 'interactions.ics.unisg.ch',
         port: 8086,
         username: 'admin',
         password: 'inthrustwetrust',
     });
 
-    const VPaddress = snapshot["triggeredByVP"];
-    delete snapshot["triggeredByVP"];
-    const flatSnapshot = flatten(snapshot);
+    const VPaddress = dataJson["triggeredByVP"];
+    delete dataJson["triggeredByVP"];   // cannot store string values in InfluxDB
+    dataJson["actionTimestamp"] = actionTimestamp;
+    const flatDataJson = flatten(dataJson);
 
     client.writePoints([
         {
             measurement: VPaddress,
-            fields: flatSnapshot,
+            fields: flatDataJson,
         }
-    ])
-    console.log("\nFeatures successfully stored on InfluxDB");
+    ]);
 }

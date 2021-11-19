@@ -63,7 +63,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 sensorsValues[sensor["id"]] = {};
                 for (let measurement of sensor["measurements"]) {
                     sensorsValues[sensor["id"]][measurement]  = async function (callback) {
-                        var res = await influxQuery.db(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
+                        var res = await influxQuery.getStream(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
                         // console.log(res);
                         callback(null, res);
                     }
@@ -124,8 +124,10 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         features[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
         backupLog[triggerDevice][btn0Timestamp]["someonePresent"] = 1;
         
-        influxWrite.storeFeatures(triggerDevice, features[triggerDevice][btn0Timestamp]);
-
+        influxWrite.storeFlat("features", triggerDevice, btn0Timestamp, features[triggerDevice][btn0Timestamp]);
+        influxWrite.storeFlat("backup", triggerDevice, btn0Timestamp, backupLog[triggerDevice][btn0Timestamp]);
+        console.log("\nData successfully stored on InfluxDB.");
+        
         return [features, backupLog];
     }
 

@@ -41,10 +41,10 @@ function updateVPhistory(updateVPjson) {
 
 function updateDataset(featJson, triggerDevice) {
     var dataset = [];
-    Object.entries(featJson).forEach(([snapTimestamp, snapshot]) => {
-        // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + snapTimestamp)
+    Object.entries(featJson).forEach(([actionTimestamp, snapshot]) => {
+        // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + actionTimestamp)
         var flatSnapshot = flatten(snapshot);
-        flatSnapshot["timestamp"] = snapTimestamp;
+        flatSnapshot["actionTimestamp"] = actionTimestamp;
         // console.log(flatSnapshot);
         dataset.push(flatSnapshot);
     })

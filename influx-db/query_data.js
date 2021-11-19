@@ -11,7 +11,7 @@ const client = new Influx.InfluxDB({
     password: 'inthrustwetrust',
 })
 
-exports.db = async function(measurement, sensor_id, queryLimit, actionTimestamp) {
+exports.getStream = async function(measurement, sensor_id, queryLimit, actionTimestamp) {
 
     var query = createQuery(measurement, sensor_id, queryLimit)
 
