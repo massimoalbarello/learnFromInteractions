@@ -37,7 +37,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
                     if (advertisements[advAddress].length != 0) {
                         clearTimeout(presenceTimeout);
                         stopOffSnapshotTimeout();
-                        console.log("Someone in the room");
+                        console.log(advAddress + " in the room");
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
                         advertisements[advAddress] = [];
@@ -79,7 +79,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
     function addSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
         VPsnapshotsUpdate[advAddress][firstAdvTimestamp] = vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
         countVPsnapshot = countVPsnapshot + 1;
-        if (countVPsnapshot === 10){
+        if (countVPsnapshot === 1){
             countVPsnapshot = 0;
             // console.log("\nUpdating history...")
             updateVPhistory({...VPsnapshotsUpdate});

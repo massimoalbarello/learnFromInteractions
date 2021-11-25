@@ -73,20 +73,21 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
             for (let sensor of sensorsNearBy) {
                 sensorsValues[sensor["id"]] = {};
                 for (let measurement of sensor["measurements"]) {
-                    sensorsValues[sensor["id"]][measurement]  = async function (callback) {
+                    sensorsValues[sensor["id"]][measurement]  = async function (parallelCb) {
                         var res = await influxQuery.getStream(measurement=measurement, sensor_id=sensor["id"], limit="LIMIT 20", timestamp=btn0Timestamp);    // should use the timestamp of the trigger device instead of the thunderboard btn0
                         // console.log(res);
-                        callback(null, res);
+                        parallelCb(null, res);
                     }
                 };
             }
             parallel(flatten(sensorsValues), function (err, results) {
                 if (err) {
-                    console.log("Error in parallel query");
+                    console.log("Error in parallel query: ", err);
                     feedbackBuzzer.alarm()
                 }
                 else {
-                    sensorsValues = unflatten(results);                    
+                    sensorsValues = unflatten(results);    
+                    // console.log(sensorsValues);                
                     let dataObjects = computeFeatures(sensorsValues, triggerDevice, features, backupLog);
                     resolve(dataObjects);
                 }
@@ -109,27 +110,30 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                     valuesStream.push(value[measurement]);  // most recent value is the last in the array
                     timestampsStream.push(Date.parse(value["time"]));   // most recent timestamp is the last in the array
                 }
-                var index = indexOfAction(timestampsStream, btn0Timestamp);   // index of the last measurement before the action was triggered
-                // console.log("Last measurement before action: " + valuesStream[index] + " at time: " + timestampsStream[index])
-                var valuesStream_right_before = valuesStream.slice(index - measurementsRightBeforeAction, index+1);     // most recent value is the last in the array
-                // console.log(valuesStream_right_before);
-                var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
-                // console.log(valuesStream_old);
-                var norm_valuesStream = featFunctions.normalize(valuesStream);
-                var norm_values_right_before = norm_valuesStream.slice(index - measurementsRightBeforeAction, index+1);
-                var norm_values_old = norm_valuesStream.slice(0, index - measurementsRightBeforeAction);
-                
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = featFunctions.mean(valuesStream_right_before);
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanOld"] = featFunctions.mean(valuesStream_old);
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = featFunctions.stdev(norm_valuesStream);
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(norm_values_right_before);
-                features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = featFunctions.maxVariation(norm_values_old);
-                
-                backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = featFunctions.stream(valuesStream, timestampsStream);
-                // backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_valuesStream, timestampsStream);
+                // console.log(measurement + ": " + valuesStream);
+                if (valuesStream.length !== 0) {
+                    var index = indexOfAction(timestampsStream, btn0Timestamp);   // index of the last measurement before the action was triggered
+                    // console.log("Last measurement before action: " + valuesStream[index] + " at time: " + timestampsStream[index])
+                    var valuesStream_right_before = valuesStream.slice(index - measurementsRightBeforeAction, index+1);     // most recent value is the last in the array
+                    // console.log(valuesStream_right_before);
+                    var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
+                    // console.log(valuesStream_old);
+                    var norm_valuesStream = featFunctions.normalize(valuesStream);
+                    var norm_values_right_before = norm_valuesStream.slice(index - measurementsRightBeforeAction, index+1);
+                    var norm_values_old = norm_valuesStream.slice(0, index - measurementsRightBeforeAction);
+                    
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanRightBefore"] = featFunctions.mean(valuesStream_right_before);
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["meanOld"] = featFunctions.mean(valuesStream_old);
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stdev"] = featFunctions.stdev(norm_valuesStream);
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(norm_values_right_before);
+                    features[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["maxVarOld"] = featFunctions.maxVariation(norm_values_old);
+                    
+                    backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
+                    backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = featFunctions.stream(valuesStream, timestampsStream);
+                    // backupLog[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["normStream"] = featFunctions.stream(norm_valuesStream, timestampsStream);
+                }
             }
         }
         features[triggerDevice][btn0Timestamp]["someonePresent"] = presence;

@@ -47,6 +47,12 @@ function updateDataset(featJson, triggerDevice) {
         // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + actionTimestamp)
         var flatSnapshot = flatten(snapshot);
         flatSnapshot["actionTimestamp"] = actionTimestamp;
+        // dataset should not have values that are not numbers
+        for (const [key, value] of Object.entries(flatSnapshot)) {
+            if (typeof(value) !== "number") {
+                delete flatSnapshot[key];
+            } 
+        }
         // console.log(flatSnapshot);
         dataset.push(flatSnapshot);
     })
@@ -127,7 +133,7 @@ function candidateFound() {
             label = 0;
             break;
         default:
-            console.log("Invalid label in trigger JSON")
+            console.log("Invalid label in trigger JSON");
             invalid = true;
     }
     if (! invalid) {

@@ -18,6 +18,14 @@ exports.storeFlat = function(dataType, triggerDevice, actionTimestamp, dataJson)
     dataJson["actionTimestamp"] = actionTimestamp;
     const flatDataJson = flatten(dataJson);
 
+    // influxDB cannot store values that are not numbers
+    for (const [key, value] of Object.entries(flatDataJson)) {
+        if (typeof(value) !== "number") {
+            delete flatDataJson[key];
+        } 
+    }
+    // console.log(flatDataJson);
+
     client.writePoints([
         {
             measurement: VPaddress,
