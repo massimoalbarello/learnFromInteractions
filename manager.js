@@ -87,6 +87,7 @@ function stopOffSnapshotTimeout() {
 function determineWhoTriggered(data) {
     feedbackBuzzer.beep();
     console.log("\nAction triggered in: " + data["room"] + " from device: " + data["trigger"]);
+    console.log("New state: ", data["newState"]);
     triggerData = data;
     waitForCandidate = setTimeout(() => {
         triggerData = "";
@@ -148,12 +149,12 @@ function candidateFound() {
  
 const sensorsNearBy = [
     {
-        id: "thunderboard_086bd7fe1054",
-        measurements: ["light", "humidity"]
+        id: "thunderboard_14b4576da75c",
+        measurements: ["light", "humidity", "temperature", "tvoc", "uvi", "pressure"]
     },
     {
         id: "weather_station",
-        measurements: ["light_level",]
+        measurements: ["light_level", "rain_intensity", "sun_azimuth", "sun_elevation", "sun_radiation", "temperature", "wind_speed"]
     }
 ]
 

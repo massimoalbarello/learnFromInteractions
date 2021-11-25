@@ -9,7 +9,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
     var countVPsnapshot = 0;
     var lastThreeSnapshots = [{}, {}, {}];
 
-    const advSignalThreshold = -100;   // threshold to determine local VPs
+    const advSignalThreshold = -70;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     
@@ -27,32 +27,32 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
         var advTimestamp = Date.now();
 
         if (isVP(advData)) {
-            if (isNearBy(peripheral.rssi)) {
-                if (! advertisements.hasOwnProperty(advAddress)) {
-                    advertisements[advAddress] = [];
-                }
-                advertisements[advAddress].push([advData, advAddress, advTimestamp]);
-                // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
-                setTimeout(() => {
-                    if (advertisements[advAddress].length != 0) {
-                        clearTimeout(presenceTimeout);
-                        stopOffSnapshotTimeout();
-                        console.log(advAddress + " in the room");
+            if (! advertisements.hasOwnProperty(advAddress)) {
+                advertisements[advAddress] = [];
+            }
+            advertisements[advAddress].push([advData, advAddress, advTimestamp]);
+            // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
+            setTimeout(() => {
+                if (advertisements[advAddress].length != 0) {
+                    clearTimeout(presenceTimeout);
+                    stopOffSnapshotTimeout();
+                    if (isNearBy(peripheral.rssi)) {
+                        console.log("[" + advAddress + "]" + " in the room with RSSI: ", peripheral.rssi);
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
-                        advertisements[advAddress] = [];
-                        presenceTimeout = setPresenceTimeout();
                     }
-                }, 500);
-            }
-            else {
-                vpIsAway(advAddress);
-            }
+                    else {
+                        vpIsAway(advAddress);
+                    }
+                    advertisements[advAddress] = [];
+                    presenceTimeout = setPresenceTimeout();
+                }
+            }, 500);
         }
     });
 
     function vpIsAway(advAddress) {
-        // console.log("\n[" + advAddress + "]: VP not in this room.")
+        console.log("\n[" + advAddress + "]: VP not in this room.")
     }
 
     // periodically check whether there are VPs in the room
