@@ -8,12 +8,13 @@ const scanner = require("./ble-discover/scanner");
 const trigger = require("./trigger_server");
 const sensors = require("./data-acquisition/retrieve_sensors_data");
 const buzzer = require("./feedback/buzzer").Buzzer;
+const getLampState = require("./influx-db/query_data").getLampState;
 
 
 
 const VPfile = "./omnia/virtual-personas.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
-const offSnapshotInterval = 30000;
+const automaticNoActionSnapshotInterval = 40000;
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
@@ -22,7 +23,8 @@ var triggerData = "";
 var waitForCandidate = "";
 var timeout = 5000;
 var label = "";
-var offSnapshotTimeout = "";
+var automaticNoActionSnapshotTimeout = "";
+var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
 
 
 
@@ -58,27 +60,48 @@ function updateDataset(featJson, triggerDevice) {
     })
     datasetName = triggerDevice + "_dataset.csv";
     fastcsv.writeToPath("./omnia/" + datasetName, dataset, {headers: true})
-    .on('error', (err) => {
-        console.log("Error while updating dataset", err);
-        feedbackBuzzer.alarm();
-    })
+        .on('error', (err) => {
+            console.log("Error while updating dataset", err);
+            feedbackBuzzer.alarm();
+        })
 }
 
-
-
-function getSnapshotsLabelledOff() {
-    console.log("\nTaking off snapshot")
-    sensors.retrieveData("", "r_402_lamp", 0, sensorsNearBy, updateDataset);    // considering "r_402_lamp" as the trigger device in this room
-    offSnapshotTimeout = setTimeout(() => {
-        getSnapshotsLabelledOff();
-    }, offSnapshotInterval);
+function setNoVPnearBy() {
+    noVPnearBy = true;
 }
 
-function stopOffSnapshotTimeout() {
-    if (offSnapshotTimeout !== "") {
-        clearTimeout(offSnapshotTimeout);
-        offSnapshotTimeout = "";
-        console.log("\nOff snapshot timeout stopped");
+function resetNoVPnearBy() {
+    noVPnearBy = false;
+}
+
+// functions for automatic snapshots when no recent action is detected
+async function getAutomaticNoActionSnapshot() {
+    console.log("\nTaking automatic no action snapshot");
+    if (noVPnearBy) {
+        console.log("Setting label to 0 (light should be off)");
+        var currentLampState = 0;
+    }
+    else {
+        var currentLampState = await getLampState();
+        if (currentLampState) {
+            currentLampState = 1;
+        }
+        else {
+            currentLampState = 0;
+        }
+        console.log("Setting label to ", currentLampState);
+    }
+    sensors.retrieveData("", "r_402_lamp", currentLampState, sensorsNearBy, noVPnearBy, updateDataset);    // considering "r_402_lamp" as the trigger device in this room
+    automaticNoActionSnapshotTimeout = setTimeout(() => {
+        getAutomaticNoActionSnapshot();
+    }, automaticNoActionSnapshotInterval);
+}
+
+function stopAutomaticNoActionSnapshotTimeout() {
+    if (automaticNoActionSnapshotTimeout !== "") {
+        clearTimeout(automaticNoActionSnapshotTimeout);
+        automaticNoActionSnapshotTimeout = "";
+        console.log("\nAutomatic no action snapshot timeout stopped");
     }
 }
 
@@ -138,7 +161,7 @@ function candidateFound() {
             invalid = true;
     }
     if (! invalid) {
-        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, updateDataset);
+        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, noVPnearBy, updateDataset);
     }
     else {
         console.log("Discarding datapoint");
@@ -161,7 +184,7 @@ const sensorsNearBy = [
 feedbackBuzzer.start()
 
 console.log("\nStart listening for triggers")
-trigger.listen(determineWhoTriggered);
+trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomaticNoActionSnapshotTimeout);
 
 console.log("\nStart scanning for VPs")
-scanner.scan(updateVPhistory, setPossibleCandidate, getSnapshotsLabelledOff, stopOffSnapshotTimeout);
+scanner.scan(updateVPhistory, setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);

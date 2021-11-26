@@ -3,7 +3,7 @@ const math = require("mathjs");
 
 
 
-exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabelledOff, stopOffSnapshotTimeout) {
+exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var countVPsnapshot = 0;
@@ -12,12 +12,12 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
     const advSignalThreshold = -40;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-    
+    const checkVPnearByInterval = 20000;  // interval for periodic check of VP near by
 
     
     noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
 
-    var presenceTimeout = setPresenceTimeout();
+    var noPresenceTimeout = setNoPresenceTimeout();
 
 
     noble.on('discover', async (peripheral) => {
@@ -35,12 +35,12 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
             setTimeout(() => {
                 if (advertisements[advAddress].length != 0) {
                     if (isNearBy(peripheral.rssi)) {
-                        clearTimeout(presenceTimeout);
-                        stopOffSnapshotTimeout();
+                        clearTimeout(noPresenceTimeout);
+                        resetNoVPnearBy();
                         console.log("[" + advAddress + "]" + " in the room with RSSI: ", peripheral.rssi);
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
-                        presenceTimeout = setPresenceTimeout();
+                        noPresenceTimeout = setNoPresenceTimeout();
                     }
                     else {
                         vpIsAway(advAddress);
@@ -55,13 +55,13 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
         console.log("\n[" + advAddress + "]: VP not in this room.")
     }
 
-    // periodically check whether there are VPs in the room
-    function setPresenceTimeout() {
+    // periodically check whether there are VPs in the room (if this timeout expires it means that no VP near by was detected)
+    function setNoPresenceTimeout() {
         return setTimeout(() => {
-            console.log("\nNo one in the room")
-            getSnapshotsLabelledOff();
+            console.log("\nNo VP near by")
+            setNoVPnearBy();
         }
-        , 60000);
+        , checkVPnearByInterval);
     }
 
 

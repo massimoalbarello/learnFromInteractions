@@ -26,7 +26,7 @@ var countSensorsSnapshots = 0;
 const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
 
-exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, updateDataset) {
+exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, noVPnearBy, updateDataset) {
 
     if (VPcandidate !== "") {
         var VPaddress = VPcandidate["address"];
@@ -35,10 +35,15 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         var presence = 1;
     }
     else {
-        var VPaddress = "automaticNoPresenceSnapshot"
+        var VPaddress = "automaticNoActionSnapshot"
         var VPdata = {};
         var btn0Timestamp = Date.now();
-        var presence = 0;
+        if (noVPnearBy) {
+            var presence = 0;
+        }
+        else {
+            var presence = 1;
+        }
     }
     
     console.log("\nGetting data from sensors...");
