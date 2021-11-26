@@ -9,7 +9,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
     var countVPsnapshot = 0;
     var lastThreeSnapshots = [{}, {}, {}];
 
-    const advSignalThreshold = -70;   // threshold to determine local VPs
+    const advSignalThreshold = -40;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     
@@ -31,23 +31,23 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, getSnapshotsLabel
                 advertisements[advAddress] = [];
             }
             advertisements[advAddress].push([advData, advAddress, advTimestamp]);
-            // wait "a bit" to receiv all the duplicates and then consider only the first advertisement
+            // wait "a bit" to receive all the duplicates and then consider only the first advertisement
             setTimeout(() => {
                 if (advertisements[advAddress].length != 0) {
-                    clearTimeout(presenceTimeout);
-                    stopOffSnapshotTimeout();
                     if (isNearBy(peripheral.rssi)) {
+                        clearTimeout(presenceTimeout);
+                        stopOffSnapshotTimeout();
                         console.log("[" + advAddress + "]" + " in the room with RSSI: ", peripheral.rssi);
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
                         updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
+                        presenceTimeout = setPresenceTimeout();
                     }
                     else {
                         vpIsAway(advAddress);
                     }
                     advertisements[advAddress] = [];
-                    presenceTimeout = setPresenceTimeout();
                 }
-            }, 500);
+            }, 100);    // thunderboards broadcast three replicas 20 ms apart  
         }
     });
 
