@@ -8,8 +8,11 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var countVPsnapshot = 0;
     var lastThreeSnapshots = [{}, {}, {}];
+    var oldestVPreceivedAt = 0;
+    var middleVPreceivedAt = 0;
+    var newestVPreceivedAt = 0;
 
-    const advSignalThreshold = -40;   // threshold to determine local VPs
+    const advSignalThreshold = -60;   // threshold to determine local VPs
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     const checkVPnearByInterval = 20000;  // interval for periodic check of VP near by
@@ -105,18 +108,26 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         // console.log(snapshot);
 
         if (snapshot["hall"] !== 1) {
+            // store the last three snapshots received from VPs in that room
             lastThreeSnapshots[0] = lastThreeSnapshots[1];
             lastThreeSnapshots[1] = lastThreeSnapshots[2];
             lastThreeSnapshots[2] = snapshot;
+            oldestVPreceivedAt = middleVPreceivedAt;
+            middleVPreceivedAt = newestVPreceivedAt;
+            newestVPreceivedAt = firstAdvTimestamp;   
         }
         else {
-            var avgLastThreeSnaps = averageSnapshots();
-            if (Object.keys(avgLastThreeSnaps).length !== 0) {
-                // console.log("Using average of last three snapshots before btn0 was pressed")
-                setPossibleCandidate(advAddress, avgLastThreeSnaps, firstAdvTimestamp);
+            // check if the oldest VP snapshot received is recent enough to be used (with the following two) to calculate the average snapshot
+            if (firstAdvTimestamp - oldestVPreceivedAt > 40000) {
+                console.log("No three recent VP snapshots, using the one with btn0 pressed")
+                console.log(snapshot);
+                setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);
             }
             else {
-                console.log("Haven't received any previous snapshots")
+                var avgLastThreeSnaps = averageSnapshots();
+                console.log("Using average of last three snapshots before btn0 was pressed")
+                console.log(avgLastThreeSnaps);
+                setPossibleCandidate(advAddress, avgLastThreeSnaps, firstAdvTimestamp);
             }
         }
         return snapshot;

@@ -14,7 +14,7 @@ const getLampState = require("./influx-db/query_data").getLampState;
 
 const VPfile = "./omnia/virtual-personas.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
-const automaticNoActionSnapshotInterval = 40000;
+const automaticNoActionSnapshotInterval = 1800000;
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);

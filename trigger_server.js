@@ -4,7 +4,7 @@ const http = require('http');
 
 exports.listen = function(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomaticNoActionSnapshotTimeout) {
 
-    const automaticSnapshotInterval = 30000;  // interval for periodic automatic snapshot until no action is triggered
+    const automaticSnapshotInterval = 1800000;  // interval for periodic automatic snapshot until no action is triggered
     var noActionTimeout = setNoActionTimeout();
 
     http.createServer(function (req, res) {
