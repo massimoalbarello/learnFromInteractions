@@ -1,17 +1,20 @@
 const http = require('http');
 
+const settings = require('./settings');
+
 
 
 exports.listen = function(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomaticNoActionSnapshotTimeout) {
 
-    const automaticSnapshotInterval = 1800000;  // interval for periodic automatic snapshot until no action is triggered
+    const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
+    const room = settings.room;
     var noActionTimeout = setNoActionTimeout();
 
     http.createServer(function (req, res) {
         req.on('data', (data) => {
             data = JSON.parse(data);
             if (data.hasOwnProperty("sentFrom") && data["sentFrom"] === "sensorPi") {
-                if (data["room"] === "r402") {
+                if (data["room"] === room) {
                     clearTimeout(noActionTimeout);
                     stopAutomaticNoActionSnapshotTimeout();
                     determineWhoTriggered(data);
@@ -28,7 +31,7 @@ exports.listen = function(determineWhoTriggered, getAutomaticNoActionSnapshot, s
             console.log("\nNo recent action")
             getAutomaticNoActionSnapshot();
         }
-        , automaticSnapshotInterval);
+        , automaticNoActionSnapshotInterval);
     }
 }
 

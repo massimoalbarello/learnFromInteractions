@@ -1,6 +1,8 @@
 const noble = require("@abandonware/noble");
 const math = require("mathjs");
 
+const settings = require("./../settings");
+
 
 
 exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
@@ -12,10 +14,12 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
     var middleVPreceivedAt = 0;
     var newestVPreceivedAt = 0;
 
-    const advSignalThreshold = -60;   // threshold to determine local VPs
+    const advSignalThreshold = settings.advSignalThreshold;
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
-    const checkVPnearByInterval = 20000;  // interval for periodic check of VP near by
+    const checkVPnearByInterval = settings.checkVPnearByInterval;
+    const checkRecentSnaphotsInterval = settings.checkRecentSnaphotsInterval;
+    const updateVPhistoryInterval = settings.updateVPhistoryInterval;
 
     
     noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
@@ -82,7 +86,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
     function addSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
         VPsnapshotsUpdate[advAddress][firstAdvTimestamp] = vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
         countVPsnapshot = countVPsnapshot + 1;
-        if (countVPsnapshot === 1){
+        if (countVPsnapshot === updateVPhistoryInterval){
             countVPsnapshot = 0;
             // console.log("\nUpdating history...")
             updateVPhistory({...VPsnapshotsUpdate});
@@ -118,7 +122,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         }
         else {
             // check if the oldest VP snapshot received is recent enough to be used (with the following two) to calculate the average snapshot
-            if (firstAdvTimestamp - oldestVPreceivedAt > 40000) {
+            if (firstAdvTimestamp - oldestVPreceivedAt > checkRecentSnaphotsInterval) {
                 console.log("No three recent VP snapshots, using the one with btn0 pressed")
                 console.log(snapshot);
                 setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);

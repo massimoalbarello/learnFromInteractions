@@ -4,6 +4,7 @@ const merge = require("deepmerge2");
 const flatten = require("flat");
 const fastcsv = require('fast-csv');
 
+const settings = require('./settings');
 const scanner = require("./ble-discover/scanner");
 const trigger = require("./trigger_server");
 const sensors = require("./data-acquisition/retrieve_sensors_data");
@@ -14,14 +15,15 @@ const getLampState = require("./influx-db/query_data").getLampState;
 
 const VPfile = "./omnia/virtual-personas.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
-const automaticNoActionSnapshotInterval = 1800000;
+const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
+const lampInThisRoom = settings.lampInThisRoom;
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
 var possibleCandidate = "";
 var triggerData = "";
 var waitForCandidate = "";
-var timeout = 5000;
+var candidate_actionTimeout = settings.candidate_actionTimeout;
 var label = "";
 var automaticNoActionSnapshotTimeout = "";
 var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
@@ -91,7 +93,7 @@ async function getAutomaticNoActionSnapshot() {
         }
         console.log("Setting label to ", currentLampState);
     }
-    sensors.retrieveData("", "r_402_lamp", currentLampState, sensorsNearBy, noVPnearBy, updateDataset);    // considering "r_402_lamp" as the trigger device in this room
+    sensors.retrieveData("", lampInThisRoom, currentLampState, sensorsNearBy, noVPnearBy, updateDataset);    // considering lamp in this room as the trigger device
     automaticNoActionSnapshotTimeout = setTimeout(() => {
         getAutomaticNoActionSnapshot();
     }, automaticNoActionSnapshotInterval);
@@ -116,7 +118,7 @@ function determineWhoTriggered(data) {
         triggerData = "";
         waitForCandidate = "";
         console.log("No candidate found")
-    }, timeout);    
+    }, candidate_actionTimeout);    
 }
 
 function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
@@ -138,7 +140,7 @@ function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
                 possibleCandidate = "";
                 console.log("Couldn't find any action");
             }
-        }, timeout)
+        }, candidate_actionTimeout)
     }
 }
 
@@ -170,16 +172,7 @@ function candidateFound() {
     possibleCandidate = "";
 }
  
-const sensorsNearBy = [
-    {
-        id: "thunderboard_14b4576da75c",
-        measurements: ["light", "humidity", "temperature", "tvoc", "uvi", "pressure"]
-    },
-    {
-        id: "weather_station",
-        measurements: ["light_level", "rain_intensity", "sun_azimuth", "sun_elevation", "sun_radiation", "temperature", "wind_speed"]
-    }
-]
+const sensorsNearBy = settings.sensorsNearBy;
 
 feedbackBuzzer.start()
 

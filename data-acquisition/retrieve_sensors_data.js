@@ -3,6 +3,7 @@ const parallel = require("run-parallel");
 const flatten = require("flat").flatten;
 const unflatten = require("flat").unflatten;
 
+const settings = require("./../settings");
 const influxQuery = require('../influx-db/query_data');
 const influxWrite = require('../influx-db/write_data');
 const featFunctions = require("./features");
@@ -23,8 +24,8 @@ var oldLogJson = JSON.parse(oldLogObj);
 var countSensorsSnapshots = 0;
 
 // the measurements right before should depend on their timestamps, not a given number of values before the action
-const measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
-
+const measurementsRightBeforeAction = settings.measurementsRightBeforeAction;
+const updateDatasetInterval = settings.updateDatasetInterval;
 
 exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, noVPnearBy, updateDataset) {
 
@@ -65,7 +66,7 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
     oldLogJson = updateJsonFile(newLogJson, logFile, "Backup log");
     countSensorsSnapshots = countSensorsSnapshots + 1;
 
-    if (countSensorsSnapshots === 1) {
+    if (countSensorsSnapshots === updateDatasetInterval) {
         updateDataset(newFeatJson[triggerDevice], triggerDevice);
         countSensorsSnapshots = 0;
     }

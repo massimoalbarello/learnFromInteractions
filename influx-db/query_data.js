@@ -1,6 +1,7 @@
-const Influx = require("influx")
-const buzzer = require("./../feedback/buzzer").Buzzer;
+const Influx = require("influx");
 
+const settings = require("./../settings");
+const buzzer = require("./../feedback/buzzer").Buzzer;
 
 
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
@@ -52,7 +53,7 @@ exports.getLampState = async function() {
     });
 
     return new Promise(resolve => {
-        client.query('SELECT "5/1/177" FROM "knxbucket"."autogen"."bucket" ORDER BY time DESC limit 1')
+        client.query('SELECT ' + lamp + ' FROM "knxbucket"."autogen"."bucket" ORDER BY time DESC limit 1')
             .then((result) => {
                 resolve(result);
             })
