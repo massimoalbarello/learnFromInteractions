@@ -4,6 +4,8 @@ const settings = require("./../settings");
 const buzzer = require("./../feedback/buzzer").Buzzer;
 
 
+
+const lamp = '"' + settings.lamp + '"';
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 
@@ -31,7 +33,7 @@ exports.getStream = async function(measurement, sensor_id, queryLimit, actionTim
                 resolve(results);
             })
             .catch((err) => {
-                console.log("Couldn't reach InfluxDB: ", err);
+                console.log("Couldn't get sensor data from InfluxDB: ", err);
                 feedbackBuzzer.alarm()
                 resolve([])
             });
@@ -58,7 +60,7 @@ exports.getLampState = async function() {
                 resolve(result);
             })
             .catch((err) => {
-                console.log("Couldn't reach InfluxDB: ", err);
+                console.log("Couldn't get lamp state from InfluxDB: ", err);
                 feedbackBuzzer.alarm();
                 resolve("");
             });

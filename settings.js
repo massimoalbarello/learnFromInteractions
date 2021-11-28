@@ -27,4 +27,4 @@ exports.measurementsRightBeforeAction = 3;   // number of measurements considere
 exports.updateDatasetInterval = 1;
 
 // query_data.js
-exports.lamp = "5/1/177";   // lamp from which the state is read for labaleling automatic no acion snapshot when VP near by
+exports.lamp = "5/5/121";   // lamp from which the state is read for labaleling automatic no acion snapshot when VP near by
