@@ -9,15 +9,18 @@ const client = new Influx.InfluxDB({
     password: 'inthrustwetrust',
 });
 
-client.query('SELECT * FROM "r_402_lamp_streams"."autogen"."14:b4:57:6d:a5:43" ORDER BY time DESC LIMIT 1').then((flatBackupStream) => {
-    delete flatBackupStream["groupsTagsKeys"];
-    delete flatBackupStream["groupRows"];
-    delete flatBackupStream["group"];
-    delete flatBackupStream["groups"];
-    delete flatBackupStream[0]["time"];
+client.query('SELECT * FROM "r_402_lamp_streams"."autogen"."automaticNoActionSnapshot"').then((flatStreams) => {
+    for (const flatStream of flatStreams) {
+        for (const [key, value] of Object.entries(flatStream)) {
+            if (value === null) {
+                delete flatStream[key];
+            }
+          }
+        // console.log(flatStream);
+        delete flatStream["time"];
 
-    var backupStream = unflatten(flatBackupStream[0]);
-    console.log(backupStream);
-
+        var stream = unflatten(flatStream);
+        console.log(stream);
+    }
     // make sure to remove the "null" from the array of each measurement
 });
