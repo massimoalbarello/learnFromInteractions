@@ -14,12 +14,15 @@ const getLampState = require("./influx-db/query_data").getLampState;
 
 
 const VPfile = "./omnia/virtual-personas.json";
+const logNoMatchingFile = "./omnia/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
 const lampInThisRoom = settings.lampInThisRoom;
 
 var oldVPobj = fs.readFileSync(VPfile, "utf-8");
 var oldVPjson = JSON.parse(oldVPobj);
+var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
+var logNoMatchingJson = JSON.parse(logNoMatchingObj);
 var possibleCandidate = "";
 var triggerData = "";
 var waitForCandidate = "";
@@ -32,16 +35,7 @@ var noVPnearBy = false;     // set to true after scanner does not detect any VP 
 
 function updateVPhistory(updateVPjson) {
     var newVPjson = merge(oldVPjson, updateVPjson);
-    var newVPobj = JSON.stringify(newVPjson);
-    fs.writeFile(VPfile, newVPobj, (err) => {
-        if (err) {
-            console.log("Error while writing file", err);
-            feedbackBuzzer.alarm()
-        }
-        else {
-            // console.log("\nFile written successfully")
-        }
-    })
+    writeJsonToFile(newVPjson, VPfile);
     oldVPjson = newVPjson;
 };
 
@@ -117,7 +111,9 @@ function determineWhoTriggered(data) {
     waitForCandidate = setTimeout(() => {
         triggerData = "";
         waitForCandidate = "";
-        console.log("No candidate found")
+        console.log("No candidate found");
+        logNoMatchingJson["countActionsWithoutCandidate"] += 1;
+        writeJsonToFile(logNoMatchingJson, logNoMatchingFile);
     }, candidate_actionTimeout);    
 }
 
@@ -138,6 +134,8 @@ function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
             }
             else {
                 possibleCandidate = "";
+                logNoMatchingJson["candidatesWithoutActions"].push([VPaddress, new Date(btn0Timestamp)]);
+                writeJsonToFile(logNoMatchingJson, logNoMatchingFile);
                 console.log("Couldn't find any action");
             }
         }, candidate_actionTimeout)
@@ -171,6 +169,21 @@ function candidateFound() {
     triggerData = "";
     possibleCandidate = "";
 }
+
+function writeJsonToFile(newJson, file) {
+    var newObj = JSON.stringify(newJson);
+    fs.writeFile(file, newObj, (err) => {
+        if (err) {
+            console.log("Error while writing file", err);
+            feedbackBuzzer.alarm()
+        }
+        else {
+            // console.log("\nFile written successfully")
+        }
+    })
+}
+
+
  
 const sensorsNearBy = settings.sensorsNearBy;
 
