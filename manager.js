@@ -1,8 +1,6 @@
 const fs = require("fs");
 const merge = require("deepmerge2");
 // const _ = require("underscore");
-const flatten = require("flat");
-const fastcsv = require('fast-csv');
 
 const settings = require('./settings');
 const scanner = require("./ble-discover/scanner");
@@ -39,29 +37,6 @@ function updateVPhistory(updateVPjson) {
     oldVPjson = newVPjson;
 };
 
-function updateDataset(featJson, triggerDevice) {
-    var dataset = [];
-    Object.entries(featJson).forEach(([actionTimestamp, snapshot]) => {
-        // console.log("Triggered by: " + snapshot["triggeredBy"] + " at timestamp: " + actionTimestamp)
-        var flatSnapshot = flatten(snapshot);
-        flatSnapshot["actionTimestamp"] = actionTimestamp;
-        // dataset should not have values that are not numbers
-        for (const [key, value] of Object.entries(flatSnapshot)) {
-            if (typeof(value) !== "number") {
-                delete flatSnapshot[key];
-            } 
-        }
-        // console.log(flatSnapshot);
-        dataset.push(flatSnapshot);
-    })
-    datasetName = triggerDevice + "_dataset.csv";
-    fastcsv.writeToPath("./omnia/" + datasetName, dataset, {headers: true})
-        .on('error', (err) => {
-            console.log("Error while updating dataset", err);
-            feedbackBuzzer.alarm();
-        })
-}
-
 function setNoVPnearBy() {
     noVPnearBy = true;
 }
@@ -87,7 +62,7 @@ async function getAutomaticNoActionSnapshot() {
         }
         console.log("Setting label to ", currentLampState);
     }
-    sensors.retrieveData("", lampInThisRoom, currentLampState, sensorsNearBy, noVPnearBy, updateDataset);    // considering lamp in this room as the trigger device
+    sensors.retrieveData("", lampInThisRoom, currentLampState, sensorsNearBy, noVPnearBy);    // considering lamp in this room as the trigger device
     automaticNoActionSnapshotTimeout = setTimeout(() => {
         getAutomaticNoActionSnapshot();
     }, automaticNoActionSnapshotInterval);
@@ -161,7 +136,7 @@ function candidateFound() {
             invalid = true;
     }
     if (! invalid) {
-        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, noVPnearBy, updateDataset);
+        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, noVPnearBy);
     }
     else {
         console.log("Discarding datapoint");

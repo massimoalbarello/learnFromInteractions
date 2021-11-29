@@ -1,13 +1,8 @@
 node_modules/
-r_400_lamp_dataset.csv
-r_402_lamp_dataset.csv
-shared_lamp_dataset.csv
 virtual-personas.json
+logNoMatching.json
 mqtt_test.js
 oldVPsnaps_test.js
-
-data-acquisition/features.json
-data-acquisition/backupLog.json
 
 influx-db/test_query.js
 influx-db/createDB.js
