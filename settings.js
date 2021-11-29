@@ -22,9 +22,5 @@ exports.checkVPnearByInterval = 20000;  // interval for periodic check of VP nea
 exports.checkRecentSnapshotsInterval = 40000;   // interval after which the three stored snapshots are considered too old to be used in average snapshot
 exports.updateVPhistoryInterval = 1;
 
-// retrieve_sensors_data.js
-exports.measurementsRightBeforeAction = 3;   // number of measurements considered as "right before" the action
-exports.updateDatasetInterval = 1;
-
 // query_data.js
 exports.lamp = "5/5/121";   // lamp from which the state is read for labaleling automatic no acion snapshot when VP near by

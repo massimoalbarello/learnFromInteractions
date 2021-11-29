@@ -3,6 +3,7 @@ virtual-personas.json
 logNoMatching.json
 mqtt_test.js
 oldVPsnaps_test.js
+automaticNoActionSnapshot_dataset.csv
 
 influx-db/test_query.js
 influx-db/createDB.js
