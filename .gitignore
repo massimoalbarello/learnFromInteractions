@@ -1,9 +1,10 @@
 node_modules/
 virtual-personas.json
 logNoMatching.json
+automaticNoActionSnapshot_dataset.csv
+14:b4:57:6d:a5:43_dataset.csv
 mqtt_test.js
 oldVPsnaps_test.js
-automaticNoActionSnapshot_dataset.csv
 
 influx-db/test_query.js
 influx-db/createDB.js

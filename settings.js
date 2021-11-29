@@ -24,3 +24,7 @@ exports.updateVPhistoryInterval = 1;
 
 // query_data.js
 exports.lamp = "5/5/121";   // lamp from which the state is read for labaleling automatic no acion snapshot when VP near by
+
+// influx-db/getFeaturesFromStreams.js
+exports.measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
+exports.database = "r_402_lamp_streams";
