@@ -54,12 +54,12 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
                     }
                     advertisements[advAddress] = [];
                 }
-            }, 100);    // thunderboards broadcast three replicas 20 ms apart  
+            }, 400);    // thunderboards broadcast three replicas 100 ms apart  
         }
     });
 
     function vpIsAway(advAddress) {
-        console.log("\n[" + advAddress + "]: VP not in this room.")
+        // console.log("\n[" + advAddress + "]: VP not in this room.")
     }
 
     // periodically check whether there are VPs in the room (if this timeout expires it means that no VP near by was detected)

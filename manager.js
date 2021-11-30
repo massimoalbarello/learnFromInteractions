@@ -54,12 +54,6 @@ async function getAutomaticNoActionSnapshot() {
     }
     else {
         var currentLampState = await getLampState();
-        if (currentLampState) {
-            currentLampState = 1;
-        }
-        else {
-            currentLampState = 0;
-        }
         console.log("Setting label to ", currentLampState);
     }
     sensors.retrieveData("", lampInThisRoom, currentLampState, sensorsNearBy, noVPnearBy);    // considering lamp in this room as the trigger device

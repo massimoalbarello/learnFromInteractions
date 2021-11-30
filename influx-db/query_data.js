@@ -5,20 +5,20 @@ const buzzer = require("./../feedback/buzzer").Buzzer;
 
 
 
-const lamp = '"' + settings.lamp + '"';
+const room = settings.room;
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 
 
+const client = new Influx.InfluxDB({
+    database: 'sensor_net',
+    host: 'interactions.ics.unisg.ch',
+    port: 8086,
+    username: 'admin',
+    password: 'inthrustwetrust',
+});
+
 exports.getStream = async function(measurement, sensor_id, queryLimit, actionTimestamp) {
-        
-    const client = new Influx.InfluxDB({
-        database: 'sensor_net',
-        host: 'interactions.ics.unisg.ch',
-        port: 8086,
-        username: 'admin',
-        password: 'inthrustwetrust',
-    });
 
     var query = createQuery(measurement, sensor_id, queryLimit)
     
@@ -45,19 +45,11 @@ exports.getStream = async function(measurement, sensor_id, queryLimit, actionTim
 }
 
 exports.getLampState = async function() {
-    
-    const client = new Influx.InfluxDB({
-        database: 'knxbucket',
-        host: 'interactions.ics.unisg.ch',
-        port: 8086,
-        username: 'admin',
-        password: 'inthrustwetrust',
-    });
 
     return new Promise(resolve => {
-        client.query('SELECT ' + lamp + ' FROM "knxbucket"."autogen"."bucket" ORDER BY time DESC limit 1')
+        client.query('SELECT "' + room + '" FROM "sensor_net"."autogen"."room_lamp_status" ORDER BY time DESC limit 1')
             .then((result) => {
-                resolve(result);
+                resolve(result[0][room]);
             })
             .catch((err) => {
                 console.log("Couldn't get lamp state from InfluxDB: ", err);
