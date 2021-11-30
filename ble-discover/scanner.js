@@ -5,7 +5,7 @@ const settings = require("./../settings");
 
 
 
-exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
+exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var countVPsnapshot = 0;
@@ -15,16 +15,18 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
     var newestVPreceivedAt = 0;
 
     const advSignalThreshold = settings.advSignalThreshold;
+    const namesVP = settings.namesVP;
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     const checkVPnearByInterval = settings.checkVPnearByInterval;
-    const checkRecentSnaphotsInterval = settings.checkRecentSnaphotsInterval;
-    const updateVPhistoryInterval = settings.updateVPhistoryInterval;
+    const checkRecentSnapshotsInterval = settings.checkRecentSnapshotsInterval;
+
 
     
     noble.startScanning(servicesUUID, true);    // allow multiple advertisements from the same device
 
     var noPresenceTimeout = setNoPresenceTimeout();
+
 
 
     noble.on('discover', async (peripheral) => {
@@ -33,7 +35,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         var advAddress = peripheral.address;
         var advTimestamp = Date.now();
 
-        if (isVP(advData)) {
+        if (isThunderboard(advData)) {
             if (! advertisements.hasOwnProperty(advAddress)) {
                 advertisements[advAddress] = [];
             }
@@ -42,12 +44,13 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
             setTimeout(() => {
                 if (advertisements[advAddress].length != 0) {
                     if (isNearBy(peripheral.rssi)) {
-                        clearTimeout(noPresenceTimeout);
-                        resetNoVPnearBy();
-                        console.log("[" + advAddress + "]" + " in the room with RSSI: ", peripheral.rssi);
                         var firstAdvertisement = advertisements[advAddress][0];     // first advertisement = [data buffer, VP address, timestamp]
-                        updateLocalVPsnapshots(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2]);
-                        noPresenceTimeout = setNoPresenceTimeout();
+                        if (isVP(firstAdvertisement[0])) {
+                            clearTimeout(noPresenceTimeout);
+                            resetNoVPnearBy();
+                            vpSnapshot(firstAdvertisement[0], firstAdvertisement[1], firstAdvertisement[2], peripheral.rssi);
+                            noPresenceTimeout = setNoPresenceTimeout();
+                        }
                     }
                     else {
                         vpIsAway(advAddress);
@@ -71,30 +74,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         , checkVPnearByInterval);
     }
 
-
-
-    function updateLocalVPsnapshots(firstAdvData, advAddress, firstAdvTimestamp) {
-        if (isRegistered(advAddress)) {
-            addSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
-        }
-        else {
-            VPsnapshotsUpdate[advAddress] = {};
-            addSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
-        }
-    }
-
-    function addSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
-        VPsnapshotsUpdate[advAddress][firstAdvTimestamp] = vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp);
-        countVPsnapshot = countVPsnapshot + 1;
-        if (countVPsnapshot === updateVPhistoryInterval){
-            countVPsnapshot = 0;
-            // console.log("\nUpdating history...")
-            updateVPhistory({...VPsnapshotsUpdate});
-            VPsnapshotsUpdate = {};
-        }
-    }
-
-    function vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp) {
+    function vpSnapshot(firstAdvData, advAddress, firstAdvTimestamp, rssi) {
         // console.log("\n[" + advAddress + "]: received new data.");
         const snapshot = {
             "temperature": firstAdvData.readInt16LE(2),
@@ -112,6 +92,7 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         // console.log(snapshot);
 
         if (snapshot["hall"] !== 1) {
+            console.log("[" + namesVP[advAddress] + "]" + " in the room with RSSI: ", rssi);
             // store the last three snapshots received from VPs in that room
             lastThreeSnapshots[0] = lastThreeSnapshots[1];
             lastThreeSnapshots[1] = lastThreeSnapshots[2];
@@ -122,8 +103,9 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
         }
         else {
             // check if the oldest VP snapshot received is recent enough to be used (with the following two) to calculate the average snapshot
-            if (firstAdvTimestamp - oldestVPreceivedAt > checkRecentSnaphotsInterval) {
-                console.log("No three recent VP snapshots, using the one with btn0 pressed")
+            if (firstAdvTimestamp - oldestVPreceivedAt > checkRecentSnapshotsInterval) {
+                console.log("No three recent VP snapshots, using the one with btn0 pressed");
+                delete snapshot["hall"];
                 console.log(snapshot);
                 setPossibleCandidate(advAddress, snapshot, firstAdvTimestamp);
             }
@@ -164,16 +146,20 @@ exports.scan = function(updateVPhistory, setPossibleCandidate, setNoVPnearBy, re
 
 
 
-    function isVP(advData) {
-        return advData && advData.slice(0, 2).toString("hex") == manufacturerId
+    function isThunderboard(advData) {
+        return advData && advData.slice(0, 2).toString("hex") == manufacturerId;
     }
 
     function isNearBy(rssi) {
-        return rssi > advSignalThreshold
+        return rssi > advSignalThreshold;
+    }
+
+    function isVP(adv) {
+        return adv.readUInt8(21) == 255;
     }
 
     function isRegistered(advAddress) {
-        return VPsnapshotsUpdate.hasOwnProperty(advAddress)
+        return VPsnapshotsUpdate.hasOwnProperty(advAddress);
     }
 
 }

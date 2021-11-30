@@ -11,14 +11,12 @@ const getLampState = require("./influx-db/query_data").getLampState;
 
 
 
-const VPfile = "./omnia/virtual-personas.json";
 const logNoMatchingFile = "./omnia/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
 const lampInThisRoom = settings.lampInThisRoom;
+const namesVP = settings.namesVP;
 
-var oldVPobj = fs.readFileSync(VPfile, "utf-8");
-var oldVPjson = JSON.parse(oldVPobj);
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
 var logNoMatchingJson = JSON.parse(logNoMatchingObj);
 var possibleCandidate = "";
@@ -30,12 +28,6 @@ var automaticNoActionSnapshotTimeout = "";
 var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
 
 
-
-function updateVPhistory(updateVPjson) {
-    var newVPjson = merge(oldVPjson, updateVPjson);
-    writeJsonToFile(newVPjson, VPfile);
-    oldVPjson = newVPjson;
-};
 
 function setNoVPnearBy() {
     noVPnearBy = true;
@@ -87,9 +79,9 @@ function determineWhoTriggered(data) {
 }
 
 function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
-    console.log("\n[" + VPaddress + "]: possible candidate found");
+    console.log("\n[" + namesVP[VPaddress] + "]: possible candidate found");
     possibleCandidate = {
-        "address": VPaddress,
+        "address": namesVP[VPaddress],
         "data": VPdata,
         "timestamp": btn0Timestamp
     };
@@ -103,7 +95,7 @@ function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
             }
             else {
                 possibleCandidate = "";
-                logNoMatchingJson["candidatesWithoutActions"].push([VPaddress, new Date(btn0Timestamp)]);
+                logNoMatchingJson["candidatesWithoutActions"].push([namesVP[VPaddress], new Date(btn0Timestamp)]);
                 writeJsonToFile(logNoMatchingJson, logNoMatchingFile);
                 console.log("Couldn't find any action");
             }
@@ -162,4 +154,4 @@ console.log("\nStart listening for triggers")
 trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomaticNoActionSnapshotTimeout);
 
 console.log("\nStart scanning for VPs")
-scanner.scan(updateVPhistory, setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
+scanner.scan(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
