@@ -21,6 +21,7 @@ var streams = {};
 var features = {};
 client.getMeasurements().then(async (snapshotActivators) => {
     for (var snapshotActivator of snapshotActivators) {
+        // console.log("\n" + snapshotActivator)
         var flatStreams = await client.query('SELECT * FROM ' + databaseName + '."autogen"."' + snapshotActivator + '"')
         for (const flatStream of flatStreams) {
             for (const [key, value] of Object.entries(flatStream)) {

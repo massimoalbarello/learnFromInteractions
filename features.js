@@ -17,6 +17,9 @@ module.exports.standardize = function (values) {
 }
 
 module.exports.normalize = function (values) {
+    if (values.length > 0) {
+
+    }
     const max = math.max(values);
     const min = math.min(values);
     let normalized_values = [];
@@ -33,7 +36,10 @@ module.exports.normalize = function (values) {
 }
 
 module.exports.mean = function (values) {
-    return math.mean(values);
+    if (values.length > 0) {
+        return math.mean(values);
+    }
+    return null
 }
 
 module.exports.firstDerivs = function(values, timesteps) {
@@ -49,13 +55,19 @@ module.exports.firstDerivs = function(values, timesteps) {
 }
 
 module.exports.maxVariation = function(values) {
-    var max = math.max(values);
-    var min = math.min(values);
-    return (max - min)
+    if (values.length > 0) {
+        var max = math.max(values);
+        var min = math.min(values);
+        return (max - min);
+    }
+    return null
 }
 
 module.exports.stdev = function(values) {
-    return math.std(values);
+    if (values.length > 0) {
+        return math.std(values);
+    }
+    return null
 }
 
 module.exports.stream = function(values, timesteps) {
