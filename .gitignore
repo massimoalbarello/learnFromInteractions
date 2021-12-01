@@ -9,3 +9,6 @@ influx-db/test_query.js
 influx-db/createDB.js
 
 ble-discover/dummy_scan.js
+
+__pycache__/
+models/
