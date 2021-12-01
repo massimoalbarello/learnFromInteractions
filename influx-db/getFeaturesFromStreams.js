@@ -17,10 +17,10 @@ const client = new Influx.InfluxDB({
     password: 'inthrustwetrust',
 });
 
+var streams = {};
+var features = {};
 client.getMeasurements().then(async (snapshotActivators) => {
     for (var snapshotActivator of snapshotActivators) {
-        var streams = {};
-        var features = {};
         var flatStreams = await client.query('SELECT * FROM ' + databaseName + '."autogen"."' + snapshotActivator + '"')
         for (const flatStream of flatStreams) {
             for (const [key, value] of Object.entries(flatStream)) {
@@ -59,17 +59,13 @@ client.getMeasurements().then(async (snapshotActivators) => {
                         // console.log(valuesStream_right_before);
                         var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
                         // console.log(valuesStream_old);
-                        var norm_valuesStream = featFunctions.normalize(valuesStream);
-                        var norm_values_right_before = norm_valuesStream.slice(index - measurementsRightBeforeAction, index+1);
-                        var norm_values_old = norm_valuesStream.slice(0, index - measurementsRightBeforeAction);
-                        
                         features[actionTimestamp]["sensorsNearBy"][sensor][measurement] = {};
                         features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
                         features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanRightBefore"] = featFunctions.mean(valuesStream_right_before);
                         features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanOld"] = featFunctions.mean(valuesStream_old);
-                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["stdev"] = featFunctions.stdev(norm_valuesStream);
-                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(norm_values_right_before);
-                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarOld"] = featFunctions.maxVariation(norm_values_old);
+                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["stdev"] = featFunctions.stdev(valuesStream);
+                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarRightBefore"] = featFunctions.maxVariation(valuesStream_right_before);
+                        features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarOld"] = featFunctions.maxVariation(valuesStream_old);
                     }
                 }
             }
@@ -89,7 +85,7 @@ client.getMeasurements().then(async (snapshotActivators) => {
             // console.log(flatSnapshot);
             dataset.push(flatSnapshot);
         }
-        datasetName = snapshotActivator + "_dataset.csv";
+        datasetName = "dataset.csv";
         fastcsv.writeToPath("./omnia/" + datasetName, dataset, {headers: true})
             .on('error', (err) => {
                 console.log("Error while updating dataset", err);
@@ -104,5 +100,5 @@ client.getMeasurements().then(async (snapshotActivators) => {
             }
             return index;
         }
-    }
+    }    
 })
