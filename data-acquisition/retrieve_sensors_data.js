@@ -10,7 +10,7 @@ const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 
 
-exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensorsNearBy, noVPnearBy) {
+exports.retrieveData = async function(VPcandidate, database, label, sensorsNearBy, noVPnearBy) {
 
     if (VPcandidate !== "") {
         var VPaddress = VPcandidate["address"];
@@ -52,17 +52,17 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
         else {
             sensorsValues = unflatten(results);    
             // console.log(sensorsValues);                
-            storeStreams(sensorsValues, triggerDevice);
+            storeStreams(sensorsValues, database);
         }
     });
 
 
 
-    function storeStreams(sensorsValues, triggerDevice) {
+    function storeStreams(sensorsValues, database) {
 
-        var streams = initDatapoint(VPdata, btn0Timestamp, triggerDevice);
+        var streams = initDatapoint(VPdata);
         for (const sensor of sensorsNearBy) {
-            streams[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]] = {};
+            streams["sensorsNearBy"][sensor["id"]] = {};
             for (var measurement of sensor["measurements"]) {
                 var valuesStream = [];
                 var timestampsStream = [];
@@ -72,28 +72,28 @@ exports.retrieveData = async function(VPcandidate, triggerDevice, label, sensors
                 }
                 // console.log(measurement + ": " + valuesStream);
                 if (valuesStream.length !== 0) {
-                    streams[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement] = {};
-                    streams[triggerDevice][btn0Timestamp]["sensorsNearBy"][sensor["id"]][measurement]["stream"] = [valuesStream, timestampsStream];
+                    streams["sensorsNearBy"][sensor["id"]][measurement] = {};
+                    streams["sensorsNearBy"][sensor["id"]][measurement]["stream"] = [valuesStream, timestampsStream];
                 }
             }
         }
-        streams[triggerDevice][btn0Timestamp]["someonePresent"] = presence;
-        influxWrite.storeFlat("streams", triggerDevice, btn0Timestamp, streams[triggerDevice][btn0Timestamp]);
+        streams["someonePresent"] = presence;
+        // console.log(streams);
+        influxWrite.storeFlat(database, btn0Timestamp, streams);
         console.log("Streams successfully stored on InfluxDB.");
     }
 
-    function initDatapoint(VPdata, btn0Timestamp, triggerDevice) {
+    function initDatapoint(VPdata) {
         var datapoint = {};
-        datapoint[triggerDevice] = {};
-        datapoint[triggerDevice][btn0Timestamp] = {};
+        datapoint = {};
         for (const VPmeasurement of Object.keys(VPdata)) {
-            datapoint[triggerDevice][btn0Timestamp]["VP." + VPmeasurement] = VPdata[VPmeasurement];
+            datapoint["VP." + VPmeasurement] = VPdata[VPmeasurement];
         }
-        datapoint[triggerDevice][btn0Timestamp]["hours"] = new Date(btn0Timestamp).getHours();
-        datapoint[triggerDevice][btn0Timestamp]["minutes"] = new Date(btn0Timestamp).getMinutes();
-        datapoint[triggerDevice][btn0Timestamp]["triggeredByVP"] = VPaddress;
-        datapoint[triggerDevice][btn0Timestamp]["sensorsNearBy"] = {};
-        datapoint[triggerDevice][btn0Timestamp]["label"] = label;  // set to 1 if the light was switched on by this action or to 0 if it was switched off
+        datapoint["hours"] = new Date(btn0Timestamp).getHours();
+        datapoint["minutes"] = new Date(btn0Timestamp).getMinutes();
+        datapoint["triggeredByVP"] = VPaddress;
+        datapoint["sensorsNearBy"] = {};
+        datapoint["label"] = label;  // set to 1 if the light was switched on by this action or to 0 if it was switched off
 
         return datapoint;
     }

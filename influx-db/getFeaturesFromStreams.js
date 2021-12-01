@@ -7,10 +7,10 @@ const featFunctions = require('./../features');
 const settings = require('./../settings');
 
 const measurementsRightBeforeAction = settings.measurementsRightBeforeAction;
-const database = settings.database;
+const databaseName = settings.databaseName;
 
 const client = new Influx.InfluxDB({
-    database: database,
+    database: databaseName,
     host: 'interactions.ics.unisg.ch',
     port: 8086,
     username: 'admin',
@@ -21,7 +21,7 @@ client.getMeasurements().then(async (snapshotActivators) => {
     for (var snapshotActivator of snapshotActivators) {
         var streams = {};
         var features = {};
-        var flatStreams = await client.query('SELECT * FROM ' + database + '."autogen"."' + snapshotActivator + '"')
+        var flatStreams = await client.query('SELECT * FROM ' + databaseName + '."autogen"."' + snapshotActivator + '"')
         for (const flatStream of flatStreams) {
             for (const [key, value] of Object.entries(flatStream)) {
                 if (value === null) {

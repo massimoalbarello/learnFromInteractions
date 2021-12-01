@@ -14,7 +14,7 @@ const getLampState = require("./influx-db/query_data").getLampState;
 const logNoMatchingFile = "./omnia/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
-const lampInThisRoom = settings.lampInThisRoom;
+const databaseName = settings.databaseName;
 const namesVP = settings.namesVP;
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
@@ -48,7 +48,7 @@ async function getAutomaticNoActionSnapshot() {
         var currentLampState = await getLampState();
         console.log("Setting label to ", currentLampState);
     }
-    sensors.retrieveData("", lampInThisRoom, currentLampState, sensorsNearBy, noVPnearBy);    // considering lamp in this room as the trigger device
+    sensors.retrieveData("", databaseName, currentLampState, sensorsNearBy, noVPnearBy);    // considering lamp in this room as the trigger device
     automaticNoActionSnapshotTimeout = setTimeout(() => {
         getAutomaticNoActionSnapshot();
     }, automaticNoActionSnapshotInterval);
@@ -66,7 +66,7 @@ function stopAutomaticNoActionSnapshotTimeout() {
 
 function determineWhoTriggered(data) {
     feedbackBuzzer.beep();
-    console.log("\nAction triggered in: " + data["room"] + " from device: " + data["trigger"]);
+    console.log("\nAction triggered in: " + data["room"]);
     console.log("New state: ", data["newState"]);
     triggerData = data;
     waitForCandidate = setTimeout(() => {
@@ -122,7 +122,7 @@ function candidateFound() {
             invalid = true;
     }
     if (! invalid) {
-        sensors.retrieveData(possibleCandidate, triggerData["trigger"], label, sensorsNearBy, noVPnearBy);
+        sensors.retrieveData(possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy);
     }
     else {
         console.log("Discarding datapoint");

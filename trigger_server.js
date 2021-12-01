@@ -7,14 +7,14 @@ const settings = require('./settings');
 exports.listen = function(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomaticNoActionSnapshotTimeout) {
 
     const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
-    const room = settings.room;
+    const roomTrigger = settings.roomTrigger;
     var noActionTimeout = setNoActionTimeout();
 
     http.createServer(function (req, res) {
         req.on('data', (data) => {
             data = JSON.parse(data);
             if (data.hasOwnProperty("sentFrom") && data["sentFrom"] === "sensorPi") {
-                if (data["room"] === room) {
+                if (data["room"] === roomTrigger) {
                     clearTimeout(noActionTimeout);
                     stopAutomaticNoActionSnapshotTimeout();
                     determineWhoTriggered(data);

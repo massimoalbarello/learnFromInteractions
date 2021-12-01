@@ -3,10 +3,10 @@ const flatten = require("flat");
 
 
 
-exports.storeFlat = function(dataType, triggerDevice, actionTimestamp, dataJson) {
+exports.storeFlat = function(database, actionTimestamp, dataJson) {
 
     const client = new Influx.InfluxDB({
-        database: triggerDevice + "_" + dataType,
+        database: database,
         host: 'interactions.ics.unisg.ch',
         port: 8086,
         username: 'admin',

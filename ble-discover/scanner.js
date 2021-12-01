@@ -8,7 +8,6 @@ const settings = require("./../settings");
 exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
-    var countVPsnapshot = 0;
     var lastThreeSnapshots = [{}, {}, {}];
     var oldestVPreceivedAt = 0;
     var middleVPreceivedAt = 0;

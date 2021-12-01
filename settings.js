@@ -1,5 +1,5 @@
 // manager.js
-exports.lampInThisRoom = "r_400_lamp";
+exports.databaseName = "r_test_lamp_streams";     // name of the database used to store stream snapshots
 exports.candidate_actionTimeout = 10000;    // wait up to 10 seconds for a possible candidate after an action is triggered
 exports.sensorsNearBy = [
     {
@@ -14,19 +14,19 @@ exports.sensorsNearBy = [
 
 // trigger_server.js
 exports.automaticNoActionSnapshotInterval = 1800000;    // interval for periodic automatic snapshot until no action is triggered
-exports.room = "r400";
+exports.roomTrigger = "rtest";  // check if the action was triggered in this room
 
 // scanner.js
 exports.advSignalThreshold = -70;   // threshold to determine VPs near by
-exports.checkVPnearByInterval = 20000;  // interval for periodic check of VP near by
+exports.checkVPnearByInterval = 20000;  // interval for periodic check of VP near by (no VP near by if not detected for this interval)
 exports.checkRecentSnapshotsInterval = 40000;   // interval after which the three stored snapshots are considered too old to be used in average snapshot
 
 // query_data.js
-exports.room = "r400";   // room of the lamp from which the state is read for labaleling automatic no acion snapshot when VP near by
+exports.room = "r400";   // room of the lamp from which the state is read for labaleling automatic no acion snapshot when VP near by (field of measurement "room_lamp_status")
 
 // influx-db/getFeaturesFromStreams.js
 exports.measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
-exports.database = "r_400_lamp_streams";
+
 
 
 // general
