@@ -29,6 +29,7 @@
     "mqtt": "^4.2.8",
     "onoff": "^6.0.3",
     "run-parallel": "^1.2.0",
+    "sort-object": "^3.0.3",
     "utf-8-validate": "^5.0.7"
   }
 }

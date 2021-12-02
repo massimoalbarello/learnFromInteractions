@@ -48,7 +48,7 @@ async function getAutomaticNoActionSnapshot() {
         var currentLampState = await getLampState();
         console.log("Setting label to ", currentLampState);
     }
-    sensors.retrieveData("", databaseName, currentLampState, sensorsNearBy, noVPnearBy);    // considering lamp in this room as the trigger device
+    sensors.retrieveData(VPcandidate="", databaseName, label=currentLampState, sensorsNearBy, noVPnearBy, usedForPrediction=false);
     automaticNoActionSnapshotTimeout = setTimeout(() => {
         getAutomaticNoActionSnapshot();
     }, automaticNoActionSnapshotInterval);
@@ -122,7 +122,7 @@ function candidateFound() {
             invalid = true;
     }
     if (! invalid) {
-        sensors.retrieveData(possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy);
+        sensors.retrieveData(VPcandidate=possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
     }
     else {
         console.log("Discarding datapoint");

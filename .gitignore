@@ -11,4 +11,5 @@ influx-db/createDB.js
 ble-discover/dummy_scan.js
 
 __pycache__/
+preprocessing.pyc
 models/

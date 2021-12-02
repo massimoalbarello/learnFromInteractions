@@ -1,6 +1,14 @@
 const math = require('mathjs');
+const flatten = require("flat");
+const sortByKeys = require('sort-object');
 
-module.exports.standardize = function (values) {
+const settings = require('./settings');
+
+
+
+const measurementsRightBeforeAction = settings.measurementsRightBeforeAction;
+
+function standardize(values) {
     const mean = math.mean(values);
     const std = math.std(values);
     let std_values = [];
@@ -16,7 +24,7 @@ module.exports.standardize = function (values) {
     
 }
 
-module.exports.normalize = function (values) {
+function normalize(values) {
     if (values.length > 0) {
 
     }
@@ -35,14 +43,14 @@ module.exports.normalize = function (values) {
     
 }
 
-module.exports.mean = function (values) {
+function mean(values) {
     if (values.length > 0) {
         return math.mean(values);
     }
     return null
 }
 
-module.exports.firstDerivs = function(values, timesteps) {
+function firstDerivs(values, timesteps) {
     // console.log(values);
     // console.log(timesteps);
     var val_diffs = values.slice(1).map((val,i) => val - values[i]);
@@ -54,7 +62,7 @@ module.exports.firstDerivs = function(values, timesteps) {
     return first_derivs;
 }
 
-module.exports.maxVariation = function(values) {
+function maxVariation(values) {
     if (values.length > 0) {
         var max = math.max(values);
         var min = math.min(values);
@@ -63,25 +71,87 @@ module.exports.maxVariation = function(values) {
     return null
 }
 
-module.exports.stdev = function(values) {
+function stdev(values) {
     if (values.length > 0) {
         return math.std(values);
     }
     return null
 }
 
-module.exports.stream = function(values, timesteps) {
+function stream(values, timesteps) {
     return [values, timesteps];
 }
 
-module.exports.hours = function(timestamp) {
-    let date = new Date(timestamp);
-    let hours = date.getHours(); 
-    return hours;
+exports.computeFeatures = function(features, actionTimestamp, stream) {
+    features[actionTimestamp] = {};
+    features[actionTimestamp]["label"] = stream["label"];
+    features[actionTimestamp]["hours"] = stream["hours"];
+    features[actionTimestamp]["minutes"] = stream["minutes"];
+    features[actionTimestamp]["someonePresent"] = stream["someonePresent"];
+    var VPdata = stream["VP"];
+    if (VPdata !== undefined) {
+        for (const VPmeasurement of Object.keys(VPdata)) {
+            features[actionTimestamp]["VP." + VPmeasurement] = VPdata[VPmeasurement];
+        }
+    }
+    features[actionTimestamp]["sensorsNearBy"] = {};
+    for (const [sensor, measurements] of Object.entries(stream["sensorsNearBy"])) {
+        features[actionTimestamp]["sensorsNearBy"][sensor] = {};
+        for (const [measurement, values] of Object.entries(measurements)) {
+            // console.log(sensor + "-" + measurement + ": ", values["stream"][0]);
+            var valuesStream = values["stream"][0];
+            var timestampsStream = values["stream"][1];
+            if (valuesStream.length !== 0) {
+                var index = indexOfAction(timestampsStream, actionTimestamp);   // index of the last measurement before the action was triggered
+                // console.log("Last measurement before action: " + valuesStream[index] + " at time: " + timestampsStream[index])
+                var valuesStream_right_before = valuesStream.slice(index - measurementsRightBeforeAction, index+1);     // most recent value is the last in the array
+                // console.log(valuesStream_right_before);
+                var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
+                // console.log(valuesStream_old);
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement] = {};
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanRightBefore"] = mean(valuesStream_right_before);
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanOld"] = mean(valuesStream_old);
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["stdev"] = stdev(valuesStream);
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarRightBefore"] = maxVariation(valuesStream_right_before);
+                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarOld"] = maxVariation(valuesStream_old);
+            }
+        }
+    }
+    return features;
 }
 
-module.exports.minutes = function(timestamp) {
-    let date = new Date(timestamp);
-    let minutes = date.getMinutes(); 
-    return minutes;
+function indexOfAction(timestampsStream, actionTimestamp) {
+    var index = 0;
+    for (const [i, time] of timestampsStream.entries()) {
+        if (time < actionTimestamp) {
+            index = i;
+        }
+    }
+    return index;
 }
+
+
+
+exports.createDataset = function(features, training) {
+    var dataset = [];
+    for (const [actionTimestamp, snapshot] of Object.entries(features)) {
+        var flatSnapshot = flatten(snapshot);
+        // dataset should not have values that are not numbers
+        for (const [key, value] of Object.entries(flatSnapshot)) {
+            if (typeof(value) !== "number") {
+                if (training) {
+                    flatSnapshot[key] = null;   // will be imputed later by considering the other values in the dataset
+                }
+                else {
+                    flatSnapshot[key] = 0;  // will not be imputed as it is the snapshot used for the prediction
+                }
+            } 
+        }
+        sortedFlatSnapshot = sortByKeys(flatSnapshot);
+        // console.log(sortedFlatSnapshot);
+        dataset.push(sortedFlatSnapshot);
+    }
+    return dataset;
+}
+

@@ -17,4 +17,4 @@ for modelName, clf in models:
     print("\n" + modelName + ": %0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
     pickle.dump(clf, open("./omnia/models/" + modelName + ".sav", 'wb'))
 
-print()
+print("")
