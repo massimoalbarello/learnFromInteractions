@@ -1,8 +1,10 @@
 const fs = require("fs");
 const merge = require("deepmerge2");
+const {PythonShell} = require('python-shell')
 // const _ = require("underscore");
 
 const settings = require('./settings');
+const getDataForPrediction = require("./getDataForPrediction").getDataForPrediction;
 const scanner = require("./ble-discover/scanner");
 const trigger = require("./trigger_server");
 const sensors = require("./data-acquisition/retrieve_sensors_data");
@@ -15,7 +17,9 @@ const logNoMatchingFile = "./omnia/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
 const databaseName = settings.databaseName;
+const sensorsNearBy = settings.sensorsNearBy;
 const namesVP = settings.namesVP;
+const predictionInterval = settings.predictionInterval;
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
 var logNoMatchingJson = JSON.parse(logNoMatchingObj);
@@ -26,7 +30,6 @@ var candidate_actionTimeout = settings.candidate_actionTimeout;
 var label = "";
 var automaticNoActionSnapshotTimeout = "";
 var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
-
 
 
 function setNoVPnearBy() {
@@ -145,8 +148,6 @@ function writeJsonToFile(newJson, file) {
 }
 
 
- 
-const sensorsNearBy = settings.sensorsNearBy;
 
 feedbackBuzzer.start()
 
@@ -155,3 +156,24 @@ trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomati
 
 console.log("\nStart scanning for VPs")
 scanner.scan(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
+
+// periodically make prediction 
+setInterval(async() => {
+    const datapoint = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
+    console.log(datapoint);
+
+    const pyshell = new PythonShell('./omnia/makePrediction.py');
+
+    // sends a message to the Python script via stdin
+    pyshell.send(datapoint);
+
+    pyshell.on('message', function (prediction) {
+    // received a message sent from the Python script with "print" statement
+    console.log("Prediction: ", prediction);
+    });
+
+    // end the input stream and allow the process to exit
+    pyshell.end(function (err) {
+    if (err) throw err;
+    });
+}, predictionInterval);
