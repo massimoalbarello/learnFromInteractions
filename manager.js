@@ -21,6 +21,13 @@ const sensorsNearBy = settings.sensorsNearBy;
 const namesVP = settings.namesVP;
 const trainModelInterval = settings.trainModelInterval;
 const predictionInterval = settings.predictionInterval;
+const options = {
+    seed: 3,
+    maxFeatures: 0.8,
+    replacement: true,
+    nEstimators: 25
+};
+const classifier = new RFClassifier(options);
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
 var logNoMatchingJson = JSON.parse(logNoMatchingObj);
@@ -31,6 +38,7 @@ var candidate_actionTimeout = settings.candidate_actionTimeout;
 var label = "";
 var automaticNoActionSnapshotTimeout = "";
 var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
+var isTrained = false;  // true once the model has been trained
 
 
 function setNoVPnearBy() {
@@ -140,7 +148,7 @@ function writeJsonToFile(newJson, file) {
     fs.writeFile(file, newObj, (err) => {
         if (err) {
             console.log("Error while writing file", err);
-            feedbackBuzzer.alarm()
+            feedbackBuzzer.alarm();
         }
         else {
             // console.log("\nFile written successfully")
@@ -158,21 +166,36 @@ trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomati
 console.log("\nStart scanning for VPs")
 scanner.scan(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
 
+isTrained = trainModel();   // train model for the initial predictions
+
 // periodically train model 
 setInterval(async() => {
-    
-    var [features, labels] = await getDataset();
-
-    const options = {
-        seed: 3,
-        maxFeatures: 0.8,
-        replacement: true,
-        nEstimators: 25
-    };
-       
-    const classifier = new RFClassifier(options);
-    console.log("\nTraining new model...");
-    classifier.train(features, labels);
-    console.log("New model trained");
-
+    isTrained = trainModel();
 }, trainModelInterval);
+
+async function trainModel() {
+    console.log("\nGetting dataset to train new model...")
+    var [features, labels] = await getDataset();
+    if (features.length == labels.length) {
+        console.log("\nTraining new model with " + labels.length + " datapoints...");
+        classifier.train(features, labels);
+        console.log("New model trained");
+        return true;
+    }
+    else {
+        console.log("Error while training model");
+        feedbackBuzzer.alarm();
+        return false;
+    }
+}
+
+
+// periodically make prediction
+setInterval(async() => {
+    if (isTrained) {
+        const features = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
+        // console.log(features);
+        const result = classifier.predict(features);
+        console.log("Prediction: ", result[0]);
+    }
+}, predictionInterval);

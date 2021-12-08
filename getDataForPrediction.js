@@ -7,9 +7,8 @@ exports.getDataForPrediction = async function(databaseName, sensorsNearBy, noVPn
     const streams = await sensors.retrieveData(VPcandidate="", databaseName, label=null, sensorsNearBy, noVPnearBy, usedForPrediction=true);
     // console.log(streams);
     const predictionTimestamp = Date.now();
-    const features = featFunctions.computeFeatures({}, predictionTimestamp, streams);
-    delete features[predictionTimestamp]["label"];  // the label will be predicted by the model
-    // console.log(features);
-    const datapoint = featFunctions.createDataset(features, training=false);
-    return Object.values(datapoint[0]);
+    const featuresObj = featFunctions.computeFeatures({}, predictionTimestamp, streams);
+    // console.log(featuresObj);
+    const [features, ] = featFunctions.createDataset(featuresObj, training=false);  // the label will be predicted by the model
+    return features;
 }

@@ -31,7 +31,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             }
         }
         
-        console.log("\nGetting data from sensors...");
+        // console.log("\nGetting data from sensors...");
 
         var sensorsValues = {};
         // get data from sensors
