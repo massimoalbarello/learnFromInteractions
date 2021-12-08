@@ -82,21 +82,21 @@ function stream(values, timesteps) {
     return [values, timesteps];
 }
 
-exports.computeFeatures = function(features, actionTimestamp, stream) {
-    features[actionTimestamp] = {};
-    features[actionTimestamp]["label"] = stream["label"];
-    features[actionTimestamp]["hours"] = stream["hours"];
-    features[actionTimestamp]["minutes"] = stream["minutes"];
-    features[actionTimestamp]["someonePresent"] = stream["someonePresent"];
+exports.computeFeatures = function(featuresObj, actionTimestamp, stream) {
+    featuresObj[actionTimestamp] = {};
+    featuresObj[actionTimestamp]["label"] = stream["label"];
+    featuresObj[actionTimestamp]["hours"] = stream["hours"];
+    featuresObj[actionTimestamp]["minutes"] = stream["minutes"];
+    featuresObj[actionTimestamp]["someonePresent"] = stream["someonePresent"];
     var VPdata = stream["VP"];
     if (VPdata !== undefined) {
         for (const VPmeasurement of Object.keys(VPdata)) {
-            features[actionTimestamp]["VP." + VPmeasurement] = VPdata[VPmeasurement];
+            featuresObj[actionTimestamp]["VP." + VPmeasurement] = VPdata[VPmeasurement];
         }
     }
-    features[actionTimestamp]["sensorsNearBy"] = {};
+    featuresObj[actionTimestamp]["sensorsNearBy"] = {};
     for (const [sensor, measurements] of Object.entries(stream["sensorsNearBy"])) {
-        features[actionTimestamp]["sensorsNearBy"][sensor] = {};
+        featuresObj[actionTimestamp]["sensorsNearBy"][sensor] = {};
         for (const [measurement, values] of Object.entries(measurements)) {
             // console.log(sensor + "-" + measurement + ": ", values["stream"][0]);
             var valuesStream = values["stream"][0];
@@ -108,17 +108,17 @@ exports.computeFeatures = function(features, actionTimestamp, stream) {
                 // console.log(valuesStream_right_before);
                 var valuesStream_old = valuesStream.slice(0, index - measurementsRightBeforeAction);    // most recent value is the last in the array
                 // console.log(valuesStream_old);
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement] = {};
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanRightBefore"] = mean(valuesStream_right_before);
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanOld"] = mean(valuesStream_old);
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["stdev"] = stdev(valuesStream);
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarRightBefore"] = maxVariation(valuesStream_right_before);
-                features[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarOld"] = maxVariation(valuesStream_old);
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement] = {};
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["lastMeasurementBeforeAction"] = valuesStream[index];
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanRightBefore"] = mean(valuesStream_right_before);
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["meanOld"] = mean(valuesStream_old);
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["stdev"] = stdev(valuesStream);
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarRightBefore"] = maxVariation(valuesStream_right_before);
+                featuresObj[actionTimestamp]["sensorsNearBy"][sensor][measurement]["maxVarOld"] = maxVariation(valuesStream_old);
             }
         }
     }
-    return features;
+    return featuresObj;
 }
 
 function indexOfAction(timestampsStream, actionTimestamp) {
@@ -133,9 +133,10 @@ function indexOfAction(timestampsStream, actionTimestamp) {
 
 
 
-exports.createDataset = function(features, training) {
-    var dataset = [];
-    for (const [actionTimestamp, snapshot] of Object.entries(features)) {
+exports.createDataset = function(featuresObj, training) {
+    var features_list = [];
+    var labels_list = [];
+    for (const [actionTimestamp, snapshot] of Object.entries(featuresObj)) {
         var flatSnapshot = flatten(snapshot);
         // dataset should not have values that are not numbers
         for (const [key, value] of Object.entries(flatSnapshot)) {
@@ -150,8 +151,14 @@ exports.createDataset = function(features, training) {
         }
         sortedFlatSnapshot = sortByKeys(flatSnapshot);
         // console.log(sortedFlatSnapshot);
-        dataset.push(sortedFlatSnapshot);
+        labels_list.push(sortedFlatSnapshot["label"]);
+        delete sortedFlatSnapshot["label"];
+        // ignoring data from the VP
+        delete sortedFlatSnapshot["VP.humidity"];
+        delete sortedFlatSnapshot["VP.lux"];
+        delete sortedFlatSnapshot["VP.temperature"];
+        features_list.push(Object.values(sortedFlatSnapshot));
     }
-    return dataset;
+    return [features_list, labels_list];
 }
 

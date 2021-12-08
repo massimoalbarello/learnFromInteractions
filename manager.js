@@ -1,6 +1,5 @@
 const fs = require("fs");
-const merge = require("deepmerge2");
-const {PythonShell} = require('python-shell')
+const RFClassifier = require('ml-random-forest').RandomForestClassifier;
 // const _ = require("underscore");
 
 const settings = require('./settings');
@@ -10,6 +9,7 @@ const trigger = require("./trigger_server");
 const sensors = require("./data-acquisition/retrieve_sensors_data");
 const buzzer = require("./feedback/buzzer").Buzzer;
 const getLampState = require("./influx-db/query_data").getLampState;
+const getDataset = require("./influx-db/getFeaturesFromStreams").getDataset;
 
 
 
@@ -19,6 +19,7 @@ const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInte
 const databaseName = settings.databaseName;
 const sensorsNearBy = settings.sensorsNearBy;
 const namesVP = settings.namesVP;
+const trainModelInterval = settings.trainModelInterval;
 const predictionInterval = settings.predictionInterval;
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
@@ -157,23 +158,21 @@ trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomati
 console.log("\nStart scanning for VPs")
 scanner.scan(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
 
-// periodically make prediction 
+// periodically train model 
 setInterval(async() => {
-    const datapoint = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
-    console.log(datapoint);
+    
+    var [features, labels] = await getDataset();
 
-    const pyshell = new PythonShell('./omnia/makePrediction.py');
+    const options = {
+        seed: 3,
+        maxFeatures: 0.8,
+        replacement: true,
+        nEstimators: 25
+    };
+       
+    const classifier = new RFClassifier(options);
+    console.log("\nTraining new model...");
+    classifier.train(features, labels);
+    console.log("New model trained");
 
-    // sends a message to the Python script via stdin
-    pyshell.send(datapoint);
-
-    pyshell.on('message', function (prediction) {
-    // received a message sent from the Python script with "print" statement
-    console.log("Prediction: ", prediction);
-    });
-
-    // end the input stream and allow the process to exit
-    pyshell.end(function (err) {
-    if (err) throw err;
-    });
-}, predictionInterval);
+}, trainModelInterval);

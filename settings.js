@@ -1,7 +1,8 @@
 // manager.js
 exports.databaseName = "r_test_lamp_streams";     // name of the database used to store stream snapshots
 exports.candidate_actionTimeout = 10000;    // wait up to 10 seconds for a possible candidate after an action is triggered
-exports.predictionInterval = 30000; // interval after which the system makes a prediction based on the current data
+exports.trainModelInterval = 30000;     // interval after which the system trains a new model based on the data acquired so far
+exports.predictionInterval = 30000;     // interval after which the system makes a prediction based on the current data and model
 exports.sensorsNearBy = [
     {
         id: "thunderboard_086bd7fe10cb",

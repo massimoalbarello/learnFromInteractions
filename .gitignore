@@ -1,7 +1,5 @@
 node_modules/
 logNoMatching.json
-dataset.csv
-imputedFeatures.csv
 mqtt_test.js
 oldVPsnaps_test.js
 
@@ -9,7 +7,3 @@ influx-db/test_query.js
 influx-db/createDB.js
 
 ble-discover/dummy_scan.js
-
-__pycache__/
-preprocessing.pyc
-models/

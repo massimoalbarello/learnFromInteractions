@@ -27,6 +27,7 @@
     "fs": "0.0.1-security",
     "influx": "^5.9.2",
     "mathjs": "^10.0.0",
+    "ml-random-forest": "^2.0.2",
     "mqtt": "^4.2.8",
     "onoff": "^6.0.3",
     "python-shell": "^3.0.1",
