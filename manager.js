@@ -10,6 +10,7 @@ const sensors = require("./data-acquisition/retrieve_sensors_data");
 const buzzer = require("./feedback/buzzer").Buzzer;
 const getLampState = require("./influx-db/query_data").getLampState;
 const getDataset = require("./influx-db/getFeaturesFromStreams").getDataset;
+const influxWrite = require('./influx-db/write_data');
 
 
 
@@ -193,9 +194,24 @@ async function trainModel() {
 // periodically make prediction
 setInterval(async() => {
     if (isTrained) {
-        const features = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
+        const [features, streams, predictionTimestamp] = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
         // console.log(features);
-        const result = classifier.predict(features);
-        console.log("Prediction: ", result[0]);
+        var currentLampState = await getLampState();
+        console.log("Current state: ", currentLampState);
+        streams["label"] = currentLampState;
+        // console.log(streams);
+        const prediction = classifier.predict(features);
+        console.log("Prediction: ", prediction[0]); 
+        if (currentLampState != prediction[0]) {
+            console.log("\nWrong prediction :(");
+            influxWrite.storeFlat(databaseName, predictionTimestamp, streams);
+            console.log("Streams that resulted in a wrong prediction stored with correct label")
+        }
+        else {
+            console.log("Correct prediction :)")
+        }
+    }
+    else {
+        console.log("Model not yet trained")
     }
 }, predictionInterval);

@@ -7,20 +7,25 @@ const influxWrite = require('../influx-db/write_data');
 const buzzer = require("./../feedback/buzzer").Buzzer;
 
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
-
+var VPaddress = "";
 
 
 exports.retrieveData = async function(VPcandidate, database, label, sensorsNearBy, noVPnearBy, usedForPrediction = false) {
 
     return new Promise((resolve) => {
         if (VPcandidate !== "") {
-            var VPaddress = VPcandidate["address"];
+            VPaddress = VPcandidate["address"];
             var VPdata = VPcandidate["data"];
             var btn0Timestamp = VPcandidate["timestamp"];
             var presence = 1;
         }
         else {
-            var VPaddress = "automaticNoActionSnapshot";
+            if (usedForPrediction) {
+                VPaddress = "automaticWrongPredictionSnapshot";
+            }
+            else {
+                VPaddress = "automaticNoActionSnapshot";
+            }
             var VPdata = {};
             var btn0Timestamp = Date.now();
             if (noVPnearBy) {
@@ -86,8 +91,8 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
                 resolve();
             }
             else {
-                console.log("Using data for prediction");
-                resolve(streams);
+                console.log("\nUsing data for prediction");
+                resolve([streams, btn0Timestamp]);
             }
         }
 
