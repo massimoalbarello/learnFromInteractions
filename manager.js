@@ -17,8 +17,9 @@ const influxWrite = require('./influx-db/write_data');
 const logNoMatchingFile = "./omnia/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
-const databaseName = settings.databaseName;
+const streamsDBname = settings.streamsDBname;
 const sensorsNearBy = settings.sensorsNearBy;
+const predictionsDBname = settings.predictionsDBname;
 const namesVP = settings.namesVP;
 const trainModelInterval = settings.trainModelInterval;
 const predictionInterval = settings.predictionInterval;
@@ -65,7 +66,7 @@ async function getAutomaticNoActionSnapshot() {
             var currentLampState = await getLampState();
             console.log("Setting label to ", currentLampState);
         }
-        _ = await sensors.retrieveData(VPcandidate="", databaseName, label=currentLampState, sensorsNearBy, noVPnearBy, usedForPrediction=false);
+        _ = await sensors.retrieveData(VPcandidate="", streamsDBname, label=currentLampState, sensorsNearBy, noVPnearBy, usedForPrediction=false);
         lockRetrieveDataFunction = false;
         console.log("[no action snapshot]: releasing lock");
     }
@@ -148,7 +149,7 @@ async function candidateFound() {
         if (!lockTaken()) {
             lockRetrieveDataFunction = true;
             console.log("\n[candidate found]: taking lock");
-            _ = await sensors.retrieveData(VPcandidate=possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
+            _ = await sensors.retrieveData(VPcandidate=possibleCandidate, streamsDBname, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
             lockRetrieveDataFunction = false;
             console.log("[candidate found]: releasing lock");
     
@@ -224,17 +225,18 @@ setInterval(async() => {
         if (!lockTaken()) {
             lockRetrieveDataFunction = true;
             console.log("\n[periodic prediction]: taking lock");
-            const [features, streams, predictionTimestamp] = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
+            const [features, streams, predictionTimestamp] = await getDataForPrediction(streamsDBname, sensorsNearBy, noVPnearBy);
             // console.log(features);
             var currentLampState = await getLampState();
             console.log("Current state: ", currentLampState);
             streams["label"] = currentLampState;
             // console.log(streams);
-            const prediction = classifier.predict(features);
-            console.log("Prediction: ", prediction[0]); 
-            if (currentLampState != prediction[0]) {
+            const prediction = classifier.predict(features)[0];
+            console.log("Prediction: ", prediction); 
+            storePrediction(prediction, predictionTimestamp, currentLampState);     // store prediction and correct state
+            if (currentLampState != prediction) {
                 console.log("Wrong prediction :(");
-                influxWrite.storeFlat(databaseName, predictionTimestamp, streams);
+                influxWrite.storeFlat(streamsDBname, predictionTimestamp, streams);  // adding datapoint with correct label to dataset
                 console.log("Streams that resulted in a wrong prediction stored with correct label")
             }
             else {
@@ -251,3 +253,11 @@ setInterval(async() => {
         console.log("Model not yet trained")
     }
 }, predictionInterval);
+
+function storePrediction(prediction, predictionTimestamp, correctState) {
+    influxWrite.storeFlat(predictionsDBname, predictionTimestamp, {
+        "triggeredByVP": "prediction-correctState",
+        "prediction": prediction,
+        "correctState": correctState
+    });
+}

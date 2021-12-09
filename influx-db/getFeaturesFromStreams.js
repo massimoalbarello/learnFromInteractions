@@ -5,10 +5,10 @@ const fastcsv = require('fast-csv');
 const featFunctions = require('./../features');
 const settings = require('./../settings');
 
-const databaseName = settings.databaseName;
+const streamsDBname = settings.streamsDBname;
 
 const client = new Influx.InfluxDB({
-    database: databaseName,
+    database: streamsDBname,
     host: 'interactions.ics.unisg.ch',
     port: 8086,
     username: 'admin',
@@ -23,7 +23,7 @@ exports.getDataset = function() {
         client.getMeasurements().then(async (snapshotActivators) => {
             for (var snapshotActivator of snapshotActivators) {
                 // console.log("\n" + snapshotActivator)
-                var flatStreamsObj = await client.query('SELECT * FROM ' + databaseName + '."autogen"."' + snapshotActivator + '"')
+                var flatStreamsObj = await client.query('SELECT * FROM ' + streamsDBname + '."autogen"."' + snapshotActivator + '"')
                 for (const flatStream of flatStreamsObj) {
                     for (const [key, value] of Object.entries(flatStream)) {
                         if (value === null) {

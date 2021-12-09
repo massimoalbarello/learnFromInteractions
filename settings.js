@@ -1,5 +1,6 @@
 // manager.js
-exports.databaseName = "r_test_lamp_streams";     // name of the database used to store stream snapshots
+exports.streamsDBname = "r_test_lamp_streams";     // name of the database used to store stream snapshots
+exports.predictionsDBname = "r_test_lamp_predictions";  // name of the database used to store prediction and corresponding true lamp state
 exports.candidate_actionTimeout = 10000;    // wait up to 10 seconds for a possible candidate after an action is triggered
 exports.trainModelInterval = 10800000;     // interval after which the system trains a new model based on the data acquired so far
 exports.predictionInterval = 300000;     // interval after which the system makes a prediction based on the current data and model
