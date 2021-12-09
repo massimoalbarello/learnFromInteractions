@@ -91,7 +91,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
                 resolve();
             }
             else {
-                console.log("\nUsing data for prediction");
+                console.log("Using data for prediction");
                 resolve([streams, btn0Timestamp]);
             }
         }

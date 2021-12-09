@@ -1,8 +1,8 @@
 // manager.js
 exports.databaseName = "r_test_lamp_streams";     // name of the database used to store stream snapshots
 exports.candidate_actionTimeout = 10000;    // wait up to 10 seconds for a possible candidate after an action is triggered
-exports.trainModelInterval = 3600000;     // interval after which the system trains a new model based on the data acquired so far
-exports.predictionInterval = 60000;     // interval after which the system makes a prediction based on the current data and model
+exports.trainModelInterval = 10800000;     // interval after which the system trains a new model based on the data acquired so far
+exports.predictionInterval = 300000;     // interval after which the system makes a prediction based on the current data and model
 exports.sensorsNearBy = [
     {
         id: "thunderboard_086bd7fe10cb",
@@ -15,7 +15,7 @@ exports.sensorsNearBy = [
 ];
 
 // trigger_server.js
-exports.automaticNoActionSnapshotInterval = 1800000;    // interval for periodic automatic snapshot until no action is triggered
+exports.automaticNoActionSnapshotInterval = 3600000;    // interval for periodic automatic snapshot until no action is triggered
 exports.roomTrigger = "rtest";  // check if the action was triggered in this room
 
 // scanner.js

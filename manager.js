@@ -29,6 +29,7 @@ const options = {
     nEstimators: 25
 };
 const classifier = new RFClassifier(options);
+var lockRetrieveDataFunction = false;   // lock is initially available, taken while a function is calling sensors.retrieveData
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
 var logNoMatchingJson = JSON.parse(logNoMatchingObj);
@@ -52,16 +53,25 @@ function resetNoVPnearBy() {
 
 // functions for automatic snapshots when no recent action is detected
 async function getAutomaticNoActionSnapshot() {
-    console.log("\nTaking automatic no action snapshot");
-    if (noVPnearBy) {
-        console.log("Setting label to 0 (light should be off)");
-        var currentLampState = 0;
+    if (!lockTaken()) {
+        lockRetrieveDataFunction = true;
+        console.log("\n[no action snapshot]: taking lock");
+        console.log("Taking automatic no action snapshot");
+        if (noVPnearBy) {
+            console.log("Setting label to 0 (light should be off)");
+            var currentLampState = 0;
+        }
+        else {
+            var currentLampState = await getLampState();
+            console.log("Setting label to ", currentLampState);
+        }
+        _ = await sensors.retrieveData(VPcandidate="", databaseName, label=currentLampState, sensorsNearBy, noVPnearBy, usedForPrediction=false);
+        lockRetrieveDataFunction = false;
+        console.log("[no action snapshot]: releasing lock");
     }
     else {
-        var currentLampState = await getLampState();
-        console.log("Setting label to ", currentLampState);
+        console.log("[no action snapshot]: lock already taken");
     }
-    sensors.retrieveData(VPcandidate="", databaseName, label=currentLampState, sensorsNearBy, noVPnearBy, usedForPrediction=false);
     automaticNoActionSnapshotTimeout = setTimeout(() => {
         getAutomaticNoActionSnapshot();
     }, automaticNoActionSnapshotInterval);
@@ -92,7 +102,7 @@ function determineWhoTriggered(data) {
 }
 
 function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
-    console.log("\n[" + namesVP[VPaddress] + "]: possible candidate found");
+    console.log("\n{" + namesVP[VPaddress] + "}: possible candidate found");
     possibleCandidate = {
         "address": namesVP[VPaddress],
         "data": VPdata,
@@ -117,7 +127,7 @@ function setPossibleCandidate(VPaddress, VPdata, btn0Timestamp) {
 }
 
 
-function candidateFound() {
+async function candidateFound() {
     clearTimeout(waitForCandidate);
     waitForCandidate = "";
     let invalid = false;
@@ -134,8 +144,18 @@ function candidateFound() {
             console.log("Invalid label in trigger JSON");
             invalid = true;
     }
-    if (! invalid) {
-        sensors.retrieveData(VPcandidate=possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
+    if (!invalid) {
+        if (!lockTaken()) {
+            lockRetrieveDataFunction = true;
+            console.log("\n[candidate found]: taking lock");
+            _ = await sensors.retrieveData(VPcandidate=possibleCandidate, databaseName, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
+            lockRetrieveDataFunction = false;
+            console.log("[candidate found]: releasing lock");
+    
+        }
+        else {
+            console.log("[candidate found]: lock already taken");
+        }
     }
     else {
         console.log("Discarding datapoint");
@@ -157,6 +177,10 @@ function writeJsonToFile(newJson, file) {
     })
 }
 
+function lockTaken() {
+    return lockRetrieveDataFunction;
+}
+
 
 
 feedbackBuzzer.start()
@@ -167,48 +191,60 @@ trigger.listen(determineWhoTriggered, getAutomaticNoActionSnapshot, stopAutomati
 console.log("\nStart scanning for VPs")
 scanner.scan(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy);
 
-isTrained = trainModel();   // train model for the initial predictions
+trainModel();   // train model for the initial predictions
 
 // periodically train model 
 setInterval(async() => {
-    isTrained = trainModel();
+    trainModel();
 }, trainModelInterval);
 
-async function trainModel() {
-    console.log("\nGetting dataset to train new model...")
-    var [features, labels] = await getDataset();
-    if (features.length == labels.length) {
-        console.log("\nTraining new model with " + labels.length + " datapoints...");
-        classifier.train(features, labels);
-        console.log("New model trained");
-        return true;
-    }
-    else {
-        console.log("Error while training model");
-        feedbackBuzzer.alarm();
-        return false;
-    }
+function trainModel() {
+    new Promise(async () => {
+        isTrained = false;
+        console.log("\nGetting dataset to train new model...")
+        var [features, labels] = await getDataset();
+        if (features.length == labels.length) {
+            console.log("\nTraining new model with " + labels.length + " datapoints...");
+            classifier.train(features, labels);
+            console.log("New model trained");
+            isTrained = true;
+        }
+        else {
+            console.log("Error while training model");
+            feedbackBuzzer.alarm();
+            isTrained = false;
+        }
+    })
 }
 
 
 // periodically make prediction
 setInterval(async() => {
     if (isTrained) {
-        const [features, streams, predictionTimestamp] = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
-        // console.log(features);
-        var currentLampState = await getLampState();
-        console.log("Current state: ", currentLampState);
-        streams["label"] = currentLampState;
-        // console.log(streams);
-        const prediction = classifier.predict(features);
-        console.log("Prediction: ", prediction[0]); 
-        if (currentLampState != prediction[0]) {
-            console.log("\nWrong prediction :(");
-            influxWrite.storeFlat(databaseName, predictionTimestamp, streams);
-            console.log("Streams that resulted in a wrong prediction stored with correct label")
+        if (!lockTaken()) {
+            lockRetrieveDataFunction = true;
+            console.log("\n[periodic prediction]: taking lock");
+            const [features, streams, predictionTimestamp] = await getDataForPrediction(databaseName, sensorsNearBy, noVPnearBy);
+            // console.log(features);
+            var currentLampState = await getLampState();
+            console.log("Current state: ", currentLampState);
+            streams["label"] = currentLampState;
+            // console.log(streams);
+            const prediction = classifier.predict(features);
+            console.log("Prediction: ", prediction[0]); 
+            if (currentLampState != prediction[0]) {
+                console.log("Wrong prediction :(");
+                influxWrite.storeFlat(databaseName, predictionTimestamp, streams);
+                console.log("Streams that resulted in a wrong prediction stored with correct label")
+            }
+            else {
+                console.log("Correct prediction :)");
+            }
+            lockRetrieveDataFunction = false;
+            console.log("[periodic prediction]: releasing lock");
         }
         else {
-            console.log("Correct prediction :)")
+            console.log("[periodic prediction]: lock already taken");
         }
     }
     else {
