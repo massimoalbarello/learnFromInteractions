@@ -29,6 +29,7 @@
     "mathjs": "^10.0.0",
     "ml-random-forest": "^2.0.2",
     "mqtt": "^4.2.8",
+    "nodeplotlib": "^0.7.6",
     "onoff": "^6.0.3",
     "python-shell": "^3.0.1",
     "run-parallel": "^1.2.0",

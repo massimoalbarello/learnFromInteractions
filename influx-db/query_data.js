@@ -10,7 +10,7 @@ const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 
 
 
-const client = new Influx.InfluxDB({
+const sensorNet = new Influx.InfluxDB({
     database: 'sensor_net',
     host: 'interactions.ics.unisg.ch',
     port: 8086,
@@ -24,7 +24,7 @@ exports.getStream = async function(measurement, sensor_id, queryLimit, actionTim
     
     return new Promise(resolve => {
         
-        client.query(query)
+        sensorNet.query(query)
             .then((results) => {
                 if (results.length === 0) {
                     results = [];
@@ -47,7 +47,7 @@ exports.getStream = async function(measurement, sensor_id, queryLimit, actionTim
 exports.getLampState = async function() {
 
     return new Promise(resolve => {
-        client.query('SELECT "' + room + '" FROM "sensor_net"."autogen"."room_lamp_status" ORDER BY time DESC limit 1')
+        sensorNet.query('SELECT "' + room + '" FROM "sensor_net"."autogen"."room_lamp_status" ORDER BY time DESC limit 1')
             .then((result) => {
                 resolve(result[0][room]);
             })
@@ -57,4 +57,36 @@ exports.getLampState = async function() {
                 resolve("");
             });
     });
+}
+
+exports.getPredictions = async function(databaseName, queryLimit) {
+        
+    const predictionsDB = new Influx.InfluxDB({
+        database: databaseName,
+        host: 'interactions.ics.unisg.ch',
+        port: 8086,
+        username: 'admin',
+        password: 'inthrustwetrust',
+    });
+
+    return new Promise((resolve) => {
+        predictionsDB.query('SELECT "correctState", "prediction", "actionTimestamp" FROM ' + databaseName + '."autogen"."prediction-correctState" ' + queryLimit)
+        .then((results) => {
+            var predictions = [];
+            var correctStates = [];
+            var predictionTimestamps = [];
+            for (const result of results) {
+                delete result["time"];
+                predictions.push(result["prediction"]);
+                correctStates.push(result["correctState"])
+                predictionTimestamps.push(result["actionTimestamp"]);
+            }
+            resolve([predictions, correctStates, predictionTimestamps]);
+
+        })
+        .catch((err) => {
+            console.log("Couldn't get predictions from InfluxDB: ", err);
+            feedbackBuzzer.alarm();
+        });
+    })
 }
