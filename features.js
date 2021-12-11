@@ -138,26 +138,33 @@ exports.createDataset = function(featuresObj, training) {
     var labels_list = [];
     for (const [actionTimestamp, snapshot] of Object.entries(featuresObj)) {
         var flatSnapshot = flatten(snapshot);
-        // dataset should not have values that are not numbers
-        for (const [key, value] of Object.entries(flatSnapshot)) {
-            if (typeof(value) !== "number") {
-                if (training) {
-                    flatSnapshot[key] = null;   // will be imputed later by considering the other values in the dataset
-                }
-                else {
-                    flatSnapshot[key] = 0;  // will not be imputed as it is the snapshot used for the prediction
-                }
-            } 
-        }
-        sortedFlatSnapshot = sortByKeys(flatSnapshot);
-        // console.log(sortedFlatSnapshot);
-        labels_list.push(sortedFlatSnapshot["label"]);
-        delete sortedFlatSnapshot["label"];
         // ignoring data from the VP
-        delete sortedFlatSnapshot["VP.humidity"];
-        delete sortedFlatSnapshot["VP.lux"];
-        delete sortedFlatSnapshot["VP.temperature"];
-        features_list.push(Object.values(sortedFlatSnapshot));
+        delete flatSnapshot["VP.humidity"];
+        delete flatSnapshot["VP.lux"];
+        delete flatSnapshot["VP.temperature"];
+        if (Object.keys(flatSnapshot).length == 76) {
+            // dataset should not have values that are not numbers
+            for (const [key, value] of Object.entries(flatSnapshot)) {
+                if (typeof(value) !== "number") {
+                    if (training) {
+                        flatSnapshot[key] = null;   // should be imputed later by considering the other values in the dataset
+                    }
+                    else {
+                        flatSnapshot[key] = 0;  // will not be imputed as it is the snapshot used for the prediction
+                    }
+                } 
+            }
+            sortedFlatSnapshot = sortByKeys(flatSnapshot);
+            // console.log(sortedFlatSnapshot);
+            labels_list.push(sortedFlatSnapshot["label"]);
+            delete sortedFlatSnapshot["label"];
+            features_list.push(Object.values(sortedFlatSnapshot));
+        }
+        else {
+            // console.log("Discarding: ", flatSnapshot);
+            console.log("Discarding datapoint without some features");
+        }
+        
     }
     return [features_list, labels_list];
 }

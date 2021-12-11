@@ -1,9 +1,10 @@
 const Influx = require("influx");
 const unflatten = require("flat").unflatten;
-const fastcsv = require('fast-csv');
+const flatten = require("flat");
 
 const featFunctions = require('./../features');
 const settings = require('./../settings');
+const streamIsCorrect = require('./checkCorrectness').streamIsCorrect;
 
 const streamsDBname = settings.streamsDBname;
 
@@ -33,12 +34,17 @@ exports.getDataset = function() {
                     // console.log(flatStream);
                     delete flatStream["time"];  // remove time field automatically added when querying from influxDB
                     var stream = unflatten(flatStream);
-                    // console.log(stream);
-                    var actionTimestamp = stream["actionTimestamp"];
-                    streamsObj[actionTimestamp] = stream;
-                    featuresObj = featFunctions.computeFeatures(featuresObj, actionTimestamp, stream);
+                    if (streamIsCorrect(stream)) {
+                        var actionTimestamp = stream["actionTimestamp"];
+                        streamsObj[actionTimestamp] = stream;
+                        featuresObj = featFunctions.computeFeatures(featuresObj, actionTimestamp, stream);
+                    }
+                    else {
+                        // console.log("Discarding: ", flatten(stream));
+                        console.log("Discarding stream not correct");
+                    }
                 }
-            }   
+            }
             // console.log(streamsObj);
             // console.log(featuresObj);
             const [features_list, labels_list] = featFunctions.createDataset(featuresObj, training=true);
@@ -48,4 +54,3 @@ exports.getDataset = function() {
         })
     })
 }
-

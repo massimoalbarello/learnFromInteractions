@@ -5,12 +5,13 @@ const unflatten = require("flat").unflatten;
 const influxQuery = require('../influx-db/query_data');
 const influxWrite = require('../influx-db/write_data');
 const buzzer = require("./../feedback/buzzer").Buzzer;
+const streamIsCorrect = require("./../influx-db/checkCorrectness").streamIsCorrect;
 
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 var VPaddress = "";
 
 
-exports.retrieveData = async function(VPcandidate, database, label, sensorsNearBy, noVPnearBy, usedForPrediction = false) {
+exports.retrieveData = async function(VPcandidate, database, label, sensorsNearBy, noVPnearBy, usedForPrediction) {
 
     return new Promise((resolve) => {
         if (VPcandidate !== "") {
@@ -85,14 +86,21 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             }
             streams["someonePresent"] = presence;
             // console.log(streams);
-            if (!usedForPrediction) {
-                influxWrite.storeFlat(database, btn0Timestamp, streams);
-                console.log("Streams successfully stored on InfluxDB.");
-                resolve();
+            if (streamIsCorrect) {
+                if (!usedForPrediction) {
+                    influxWrite.storeFlat(database, btn0Timestamp, streams);
+                    console.log("Streams successfully stored on InfluxDB.");
+                    resolve();
+                }
+                else {
+                    console.log("Using data for prediction");
+                    resolve([streams, btn0Timestamp]);
+                }
             }
             else {
-                console.log("Using data for prediction");
-                resolve([streams, btn0Timestamp]);
+                // console.log("Discarding: ", streams);
+                console.log("Discarding stream not correct");
+                resolve([null, null])
             }
         }
 
