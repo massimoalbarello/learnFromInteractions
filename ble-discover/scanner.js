@@ -6,7 +6,6 @@ const settings = require("./../settings");
 
 
 exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
-    var VPsnapshotsUpdate = {};  // json storing the values sensed from the near by Thunderboards
     var advertisements = {};    // json momentarily storing the duplicate advertisements until the first one is processed
     var lastThreeSnapshots = [{}, {}, {}];
     var oldestVPreceivedAt = 0;
@@ -14,7 +13,6 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     var newestVPreceivedAt = 0;
 
     const advSignalThreshold = settings.advSignalThreshold;
-    const namesVP = settings.namesVP;
     const servicesUUID = [];  // looking for all services
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     const checkVPnearByInterval = settings.checkVPnearByInterval;
@@ -155,10 +153,6 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
 
     function isVP(adv) {
         return adv.readUInt8(21) == 255;
-    }
-
-    function isRegistered(advAddress) {
-        return VPsnapshotsUpdate.hasOwnProperty(advAddress);
     }
 
 }

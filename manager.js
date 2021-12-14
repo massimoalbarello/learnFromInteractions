@@ -21,8 +21,9 @@ const streamsDBname = settings.streamsDBname;
 const sensorsNearBy = settings.sensorsNearBy;
 const predictionsDBname = settings.predictionsDBname;
 const namesVP = settings.namesVP;
-const trainModelInterval = settings.trainModelInterval;
 const predictionInterval = settings.predictionInterval;
+const wrongPredicitonsTrainModelThreshold = settings.wrongPredicitonsTrainModelThreshold;
+
 const options = {
     seed: 3,
     maxFeatures: 0.8,
@@ -30,7 +31,6 @@ const options = {
     nEstimators: 25
 };
 const classifier = new RFClassifier(options);
-var lockRetrieveDataFunction = false;   // lock is initially available, taken while a function is calling sensors.retrieveData
 
 var logNoMatchingObj = fs.readFileSync(logNoMatchingFile, "utf-8");
 var logNoMatchingJson = JSON.parse(logNoMatchingObj);
@@ -42,6 +42,9 @@ var label = "";
 var automaticNoActionSnapshotTimeout = "";
 var noVPnearBy = false;     // set to true after scanner does not detect any VP near by
 var isTrained = false;  // true once the model has been trained
+var lockRetrieveDataFunction = false;   // lock is initially available, taken while a function is calling sensors.retrieveData
+var wrongPredictions = 0;
+
 
 
 function setNoVPnearBy() {
@@ -152,7 +155,6 @@ async function candidateFound() {
             _ = await sensors.retrieveData(VPcandidate=possibleCandidate, streamsDBname, label, sensorsNearBy, noVPnearBy, usedForPrediction=false);
             lockRetrieveDataFunction = false;
             console.log("[candidate found]: releasing lock");
-    
         }
         else {
             console.log("[candidate found]: lock already taken");
@@ -197,41 +199,27 @@ setTimeout(() => {
     trainModel();   // train model for the initial predictions
 }, 2000)
 
-// periodically train model 
-setInterval(async() => {
-    trainModel();
-}, trainModelInterval);
-
 function trainModel() {
-    new Promise(async () => {
-        if (!lockTaken()) {
-            lockRetrieveDataFunction = true;
-            console.log("\n[train model]: taking lock");
-            isTrained = false;
-            console.log("\nGetting dataset to train new model...")
-            var [features, labels] = await getDataset();
-            if (features.length == labels.length) {
-                console.log("\nTraining new model with " + labels.length + " datapoints...");
-                classifier.train(features, labels);
-                console.log("New model trained");
-                isTrained = true;
-            }
-            else {
-                console.log("Error while training model");
-                feedbackBuzzer.alarm();
-                isTrained = false;
-            }
-            lockRetrieveDataFunction = false;
-            console.log("[train model]: releasing lock");
+    return new Promise(async (resolve) => {
+        isTrained = false;
+        console.log("\nGetting dataset to train new model...")
+        var [features, labels] = await getDataset();
+        if (features.length == labels.length) {
+            console.log("\nTraining new model with " + labels.length + " datapoints...");
+            classifier.train(features, labels);
+            console.log("New model trained");
+            isTrained = true;
         }
         else {
-            console.log("[train model]: lock already taken");
+            console.log("Error while training model");
+            feedbackBuzzer.alarm();
+            isTrained = false;
         }
+        resolve();
     })
 }
 
-
-// periodically make prediction
+// periodically make prediction and retrain model after a few wrong predictions
 setInterval(async() => {
     if (isTrained) {
         if (!lockTaken()) {
@@ -250,7 +238,14 @@ setInterval(async() => {
                 if (currentLampState != prediction) {
                     console.log("Wrong prediction :(");
                     influxWrite.storeFlat(streamsDBname, predictionTimestamp, streams);  // adding datapoint with correct label to dataset
-                    console.log("Streams that resulted in a wrong prediction stored with correct label")
+                    console.log("Streams that resulted in a wrong prediction stored with correct label");
+                    wrongPredictions += 1;
+                    if (wrongPredictions == wrongPredicitonsTrainModelThreshold) {
+                        console.log("\nToo many wrong predictions");
+                        // _ = await feedbackBuzzer.trainingBeep();
+                        wrongPredictions = 0;
+                        _ = await trainModel();
+                    }
                 }
                 else {
                     console.log("Correct prediction :)");

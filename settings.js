@@ -2,8 +2,8 @@
 exports.streamsDBname = "r_test_lamp_streams";     // name of the database used to store stream snapshots
 exports.predictionsDBname = "r_test_lamp_predictions";  // name of the database used to store prediction and corresponding true lamp state
 exports.candidate_actionTimeout = 10000;    // wait up to 10 seconds for a possible candidate after an action is triggered
-exports.trainModelInterval = 10800000;     // interval after which the system trains a new model based on the data acquired so far
 exports.predictionInterval = 300000;     // interval after which the system makes a prediction based on the current data and model
+exports.wrongPredicitonsTrainModelThreshold = 10;    // number of wrong predictions after which the model is retrained
 exports.sensorsNearBy = [
     {
         id: "thunderboard_086bd7fe10cb",
@@ -27,7 +27,7 @@ exports.checkRecentSnapshotsInterval = 40000;   // interval after which the thre
 // query_data.js
 exports.room = "r400";   // room of the lamp from which the state is read for labaleling automatic no acion snapshot when VP near by (field of measurement "room_lamp_status")
 
-// influx-db/getFeaturesFromStreams.js
+// features.js
 exports.measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 
 

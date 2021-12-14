@@ -24,6 +24,18 @@ exports.Buzzer = class {
         setTimeout(() => this.buzzer.write(0), 300);
     }
 
+    trainingBeep() {
+        return new Promise((resolve) => {
+            this.buzzer.write(1);
+            setTimeout(() => this.buzzer.write(0), 500);
+            setTimeout(() => this.buzzer.write(1), 700);
+            setTimeout(() => this.buzzer.write(0), 1200);
+            setTimeout(() => this.buzzer.write(1), 1400);
+            setTimeout(() => this.buzzer.write(0), 1900);
+            setTimeout(() => resolve(), 2000);
+        })
+    }
+
     alarm() {
         this.buzzer.write(1);
         setTimeout(() => this.buzzer.write(0), 2000);
