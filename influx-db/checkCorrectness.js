@@ -10,6 +10,12 @@ exports.streamIsCorrect = function(stream) {
                 if (!Object.keys(stream["sensorsNearBy"]).includes(sensor["id"])) {
                     return false;
                 }
+                for (const measurement of Object.keys(stream["sensorsNearBy"][sensor["id"]])) {
+                    // if the stream of sensor values (first element of the stream array) is empty it means that the database was not reachable 
+                    if (stream["sensorsNearBy"][sensor["id"]][measurement]["stream"][0].length == 0) {
+                        return false;
+                    }
+                }
             }
             return true;
         }

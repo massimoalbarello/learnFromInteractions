@@ -23,6 +23,7 @@ const predictionsDBname = settings.predictionsDBname;
 const namesVP = settings.namesVP;
 const predictionInterval = settings.predictionInterval;
 const wrongPredicitonsTrainModelThreshold = settings.wrongPredicitonsTrainModelThreshold;
+const featuresNumber = settings.featuresNumber;
 
 const options = {
     seed: 3,
@@ -226,9 +227,10 @@ setInterval(async() => {
             lockRetrieveDataFunction = true;
             console.log("\n[periodic prediction]: taking lock");
             const [features, streams, predictionTimestamp] = await getDataForPrediction(streamsDBname, sensorsNearBy, noVPnearBy);
-            if (features != null) {
+            // features is null if the stream was not correct and it's [] if it doesn't contain all the features
+            if (features != null && features.length == featuresNumber) {
                 // console.log(features);
-                var currentLampState = await getLampState();
+                const currentLampState = await getLampState();
                 console.log("Current state: ", currentLampState);
                 streams["label"] = currentLampState;
                 // console.log(streams);

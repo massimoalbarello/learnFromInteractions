@@ -7,6 +7,7 @@ const settings = require('./settings');
 
 
 const measurementsRightBeforeAction = settings.measurementsRightBeforeAction;
+const featuresNumber = settings.featuresNumber;
 
 function standardize(values) {
     const mean = math.mean(values);
@@ -142,7 +143,7 @@ exports.createDataset = function(featuresObj, training) {
         delete flatSnapshot["VP.humidity"];
         delete flatSnapshot["VP.lux"];
         delete flatSnapshot["VP.temperature"];
-        if (Object.keys(flatSnapshot).length == 76) {
+        if (Object.keys(flatSnapshot).length == featuresNumber) {
             // dataset should not have values that are not numbers
             for (const [key, value] of Object.entries(flatSnapshot)) {
                 if (typeof(value) !== "number") {

@@ -70,7 +70,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             var streams = initDatapoint(VPdata);
             for (const sensor of sensorsNearBy) {
                 streams["sensorsNearBy"][sensor["id"]] = {};
-                for (var measurement of sensor["measurements"]) {
+                for (const measurement of sensor["measurements"]) {
                     var valuesStream = [];
                     var timestampsStream = [];
                     for (const value of sensorsValues[sensor["id"]][measurement]) {

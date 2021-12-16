@@ -29,6 +29,7 @@ exports.room = "r400";   // room of the lamp from which the state is read for la
 
 // features.js
 exports.measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
+exports.featuresNumber = 76;    // number of features computed from all streams
 
 
 
