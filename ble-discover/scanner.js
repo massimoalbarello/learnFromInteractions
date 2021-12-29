@@ -17,6 +17,7 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     const manufacturerId = "4700";  // scan for devices with this manufacturer ID
     const checkVPnearByInterval = settings.checkVPnearByInterval;
     const checkRecentSnapshotsInterval = settings.checkRecentSnapshotsInterval;
+    const namesVP = settings.namesVP;
 
 
     
@@ -89,7 +90,7 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
         // console.log(snapshot);
 
         if (snapshot["hall"] !== 1) {
-            // console.log("[" + namesVP[advAddress] + "]" + " in the room with RSSI: ", rssi);
+            console.log("[" + namesVP[advAddress] + "]" + " in the room with RSSI: ", rssi);
             // store the last three snapshots received from VPs in that room
             lastThreeSnapshots[0] = lastThreeSnapshots[1];
             lastThreeSnapshots[1] = lastThreeSnapshots[2];

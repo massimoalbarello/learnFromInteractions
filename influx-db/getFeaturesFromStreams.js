@@ -7,6 +7,7 @@ const settings = require('./../settings');
 const streamIsCorrect = require('./checkCorrectness').streamIsCorrect;
 
 const streamsDBname = settings.streamsDBname;
+const faultyDataDates = settings.faultyDataDates;
 
 const client = new Influx.InfluxDB({
     database: streamsDBname,
@@ -23,25 +24,30 @@ exports.getDataset = function() {
     return new Promise((resolve) => {
         client.getMeasurements().then(async (snapshotActivators) => {
             for (var snapshotActivator of snapshotActivators) {
-                // console.log("\n" + snapshotActivator)
+                console.log("\n" + snapshotActivator)
                 var flatStreamsObj = await client.query('SELECT * FROM ' + streamsDBname + '."autogen"."' + snapshotActivator + '"')
                 for (const flatStream of flatStreamsObj) {
-                    for (const [key, value] of Object.entries(flatStream)) {
-                        if (value === null) {
-                            delete flatStream[key];
+                    if (! faultyDataDates.includes([flatStream["time"].getDate(), flatStream["time"].getMonth()].toString())) {
+                        for (const [key, value] of Object.entries(flatStream)) {
+                            if (value === null) {
+                                delete flatStream[key];
+                            }
+                        }
+                        // console.log(flatStream);
+                        delete flatStream["time"];  // remove time field automatically added when querying from influxDB
+                        var stream = unflatten(flatStream);
+                        if (streamIsCorrect(stream)) {
+                            var actionTimestamp = stream["actionTimestamp"];
+                            streamsObj[actionTimestamp] = stream;
+                            featuresObj = featFunctions.computeFeatures(featuresObj, actionTimestamp, stream);
+                        }
+                        else {
+                            // console.log("Discarding: ", flatten(stream));
+                            console.log("Discarding stream not correct");
                         }
                     }
-                    // console.log(flatStream);
-                    delete flatStream["time"];  // remove time field automatically added when querying from influxDB
-                    var stream = unflatten(flatStream);
-                    if (streamIsCorrect(stream)) {
-                        var actionTimestamp = stream["actionTimestamp"];
-                        streamsObj[actionTimestamp] = stream;
-                        featuresObj = featFunctions.computeFeatures(featuresObj, actionTimestamp, stream);
-                    }
                     else {
-                        // console.log("Discarding: ", flatten(stream));
-                        console.log("Discarding stream not correct");
+                        console.log("Discarding stream from faulty date: ", [flatStream["time"].getDate(), flatStream["time"].getMonth()]);
                     }
                 }
             }

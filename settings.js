@@ -31,6 +31,9 @@ exports.room = "r400";   // room of the lamp from which the state is read for la
 exports.measurementsRightBeforeAction = 3;    // number of measurements considered as "right before" the action
 exports.featuresNumber = 76;    // number of features computed from all streams
 
+// getFeaturesFromStreams.js
+exports.faultyDataDates = ["16,11", ]     // dates "dd,mm" in which faulty data was recorded (!!! months go from 0 (January) to 11 (December) !!!)
+
 
 
 // general
@@ -41,3 +44,4 @@ exports.namesVP = {
     "00:0d:6f:20:d3:11": "Ganesh",
     "00:0d:6f:20:d1:e2": "Andres"
 }
+exports.storeOnDB = true;

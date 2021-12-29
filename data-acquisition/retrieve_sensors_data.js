@@ -6,8 +6,10 @@ const influxQuery = require('../influx-db/query_data');
 const influxWrite = require('../influx-db/write_data');
 const buzzer = require("./../feedback/buzzer").Buzzer;
 const streamIsCorrect = require("./../influx-db/checkCorrectness").streamIsCorrect;
+const settings = require("./../settings");
 
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
+const storeOnDB = settings.storeOnDB;
 var VPaddress = "";
 
 
@@ -88,8 +90,10 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             // console.log(streams);
             if (streamIsCorrect) {
                 if (!usedForPrediction) {
-                    influxWrite.storeFlat(database, btn0Timestamp, streams);
-                    console.log("Streams successfully stored on InfluxDB.");
+                    if (storeOnDB) {
+                        influxWrite.storeFlat(database, btn0Timestamp, streams);
+                        console.log("Streams successfully stored on InfluxDB.");
+                    }
                     resolve();
                 }
                 else {

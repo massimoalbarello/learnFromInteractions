@@ -24,6 +24,7 @@ const namesVP = settings.namesVP;
 const predictionInterval = settings.predictionInterval;
 const wrongPredicitonsTrainModelThreshold = settings.wrongPredicitonsTrainModelThreshold;
 const featuresNumber = settings.featuresNumber;
+const storeOnDB = settings.storeOnDB;
 
 const options = {
     seed: 3,
@@ -236,17 +237,21 @@ setInterval(async() => {
                 // console.log(streams);
                 const prediction = classifier.predict(features)[0];
                 console.log("Prediction: ", prediction);
-                storePrediction(prediction, predictionTimestamp, currentLampState);     // store prediction and correct state
+                if (storeOnDB) {
+                    storePrediction(prediction, predictionTimestamp, currentLampState);     // store prediction and correct state
+                }
                 if (currentLampState != prediction) {
                     console.log("Wrong prediction :(");
-                    influxWrite.storeFlat(streamsDBname, predictionTimestamp, streams);  // adding datapoint with correct label to dataset
-                    console.log("Streams that resulted in a wrong prediction stored with correct label");
-                    wrongPredictions += 1;
-                    if (wrongPredictions == wrongPredicitonsTrainModelThreshold) {
-                        console.log("\nToo many wrong predictions");
-                        // _ = await feedbackBuzzer.trainingBeep();
-                        wrongPredictions = 0;
-                        _ = await trainModel();
+                    if (storeOnDB) {
+                        influxWrite.storeFlat(streamsDBname, predictionTimestamp, streams);  // adding datapoint with correct label to dataset
+                        console.log("Streams that resulted in a wrong prediction stored with correct label");
+                        wrongPredictions += 1;
+                        if (wrongPredictions == wrongPredicitonsTrainModelThreshold) {
+                            console.log("\nToo many wrong predictions");
+                            // _ = await feedbackBuzzer.trainingBeep();
+                            wrongPredictions = 0;
+                            _ = await trainModel();
+                        }
                     }
                 }
                 else {
@@ -269,9 +274,11 @@ setInterval(async() => {
 }, predictionInterval);
 
 function storePrediction(prediction, predictionTimestamp, correctState) {
-    influxWrite.storeFlat(predictionsDBname, predictionTimestamp, {
-        "triggeredByVP": "prediction-correctState",
-        "prediction": prediction,
-        "correctState": correctState
-    });
+    if (storeOnDB) {
+        influxWrite.storeFlat(predictionsDBname, predictionTimestamp, {
+            "triggeredByVP": "prediction-correctState",
+            "prediction": prediction,
+            "correctState": correctState
+        });
+    }
 }
