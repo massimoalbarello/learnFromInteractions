@@ -143,6 +143,7 @@ exports.createDataset = function(featuresObj, training) {
         delete flatSnapshot["VP.humidity"];
         delete flatSnapshot["VP.lux"];
         delete flatSnapshot["VP.temperature"];
+        // console.log(Object.keys(flatSnapshot).length);
         if (Object.keys(flatSnapshot).length == featuresNumber) {
             // dataset should not have values that are not numbers
             for (const [key, value] of Object.entries(flatSnapshot)) {
@@ -163,7 +164,7 @@ exports.createDataset = function(featuresObj, training) {
         }
         else {
             // console.log("Discarding: ", flatSnapshot);
-            console.log("Discarding datapoint without some features");
+            console.log("Discarding datapoint without some features: ", flatSnapshot);
         }
         
     }

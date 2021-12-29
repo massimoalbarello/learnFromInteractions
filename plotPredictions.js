@@ -27,15 +27,14 @@ function plotFunction(predictions, correctStates, timestamps, title) {
     plotlib.plot(data, layout);
 }
 
-async function ciao() {
+async function main() {
     const [predictions, correctStates, predictionTimestamps] = await influxQuery.getPredictions(predictionsDBname, "");
     var dates = [];
     for (const predictionTimestamp of predictionTimestamps) {
-        const date = new Date(predictionTimestamp);
-        dates.push(date);
+        dates.push(new Date(predictionTimestamp));
     }
     plotFunction(predictions, correctStates, dates, "Predictions and correct states plot");
 
 }
 
-ciao()
+main();

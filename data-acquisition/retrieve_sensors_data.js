@@ -99,7 +99,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             }
             else {
                 // console.log("Discarding: ", streams);
-                console.log("Discarding stream not correct");
+                console.log("Discarding stream not correct: ", stream);
                 resolve([null, null])
             }
         }

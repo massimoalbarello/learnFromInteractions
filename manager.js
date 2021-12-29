@@ -228,7 +228,7 @@ setInterval(async() => {
             console.log("\n[periodic prediction]: taking lock");
             const [features, streams, predictionTimestamp] = await getDataForPrediction(streamsDBname, sensorsNearBy, noVPnearBy);
             // features is null if the stream was not correct and it's [] if it doesn't contain all the features
-            if (features != null && features.length == featuresNumber) {
+            if (features != null && features.length > 0) {
                 // console.log(features);
                 const currentLampState = await getLampState();
                 console.log("Current state: ", currentLampState);
@@ -254,7 +254,7 @@ setInterval(async() => {
                 }
             }
             else {
-                console.log("Discarding data from DB not correct");
+                console.log("Features not computed correctly", features);
             }    
             lockRetrieveDataFunction = false;
             console.log("[periodic prediction]: releasing lock");
