@@ -1,5 +1,5 @@
 {
-  "name": "omnia",
+  "name": "learnFromInteractions",
   "version": "1.0.0",
   "description": "Repo for my semester project based on Thingweb.",
   "main": "index.js",
@@ -8,15 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/massimoalbarello/omnia.git"
+    "url": "git+https://github.com/massimoalbarello/learnFromInteractions.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/massimoalbarello/omnia/issues"
+    "url": "https://github.com/massimoalbarello/learnFromInteractions/issues"
   },
-  "homepage": "https://github.com/massimoalbarello/omnia#readme",
+  "homepage": "https://github.com/massimoalbarello/learnFromInteractions#readme",
   "dependencies": {
     "@abandonware/noble": "^1.9.2-15",
     "bufferutil": "^4.0.5",

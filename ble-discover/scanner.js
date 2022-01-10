@@ -153,7 +153,10 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
     }
 
     function isVP(adv) {
-        return adv.readUInt8(21) == 255;
+        if (adv.length == 22) {
+            return adv.readUInt8(21) == 255;
+        }
+        return false;
     }
 
 }

@@ -14,7 +14,7 @@ const influxWrite = require('./influx-db/write_data');
 
 
 
-const logNoMatchingFile = "./omnia/logNoMatching.json";
+const logNoMatchingFile = "./learnFromInteractions/logNoMatching.json";
 const feedbackBuzzer = new buzzer(4);    // feedback buzzer on gpio 4
 const automaticNoActionSnapshotInterval = settings.automaticNoActionSnapshotInterval;
 const streamsDBname = settings.streamsDBname;
