@@ -42,6 +42,9 @@ exports.namesVP = {
     "14:b4:57:6d:a5:43": "Jannis",
     "14:b4:57:6d:a8:54": "Iori",
     "00:0d:6f:20:d3:11": "Ganesh",
-    "00:0d:6f:20:d1:e2": "Andres"
+    "00:0d:6f:20:d1:e2": "Andres",
+    "00:0b:57:51:b2:24": "Simon",
+    "00:0b:57:51:ca:9a": "Sanjiv",
+    "00:0b:57:51:bd:de": "Kenan",
 }
 exports.storeOnDB = true;

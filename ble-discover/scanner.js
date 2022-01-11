@@ -89,7 +89,7 @@ exports.scan = function(setPossibleCandidate, setNoVPnearBy, resetNoVPnearBy) {
         };
         // console.log(snapshot);
 
-        if (snapshot["hall"] !== 1) {
+        if (snapshot["hall"] == 0) {
             console.log("[" + namesVP[advAddress] + "]" + " in the room with RSSI: ", rssi);
             // store the last three snapshots received from VPs in that room
             lastThreeSnapshots[0] = lastThreeSnapshots[1];
