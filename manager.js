@@ -207,7 +207,7 @@ function trainModel() {
         console.log("\nGetting dataset to train new model...")
         var [features, labels] = await getDataset();
         if (features.length == labels.length) {
-            console.log("\nTraining new model with " + labels.length + " datapoints...");
+            console.log("\nTraining new model with " + labels.length + " datapoints and " + features[0].length + " features each...");
             classifier.train(features, labels);
             console.log("New model trained");
             isTrained = true;

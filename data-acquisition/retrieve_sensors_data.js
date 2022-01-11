@@ -88,7 +88,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             }
             streams["someonePresent"] = presence;
             // console.log(streams);
-            if (streamIsCorrect) {
+            if (streamIsCorrect(streams)) {
                 if (!usedForPrediction) {
                     if (storeOnDB) {
                         influxWrite.storeFlat(database, btn0Timestamp, streams);
@@ -103,7 +103,7 @@ exports.retrieveData = async function(VPcandidate, database, label, sensorsNearB
             }
             else {
                 // console.log("Discarding: ", streams);
-                console.log("Discarding stream not correct: ", stream);
+                console.log("Discarding stream not correct: ", streams);
                 resolve([null, null])
             }
         }
