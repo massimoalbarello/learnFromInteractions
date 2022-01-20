@@ -1,0 +1,212 @@
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix htv: <http://www.w3.org/2011/http#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+@prefix saref: <https://saref.etsi.org/core/v3.1.1/#> .
+​
+<urn:thundersense400> a td:Thing ;
+    dct:title "thundersense400" ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
+    td:hasBase <http://semantics.interactions.ics.unisg.ch/> ;
+    td:hasPropertyAffordance [ 
+
+        a td:PropertyAffordance, saref:Light;
+        td:name "lightValue";
+        td:description "last light measurement"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=light> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ObjectSchema;
+            js:propertyName "lastMeasurement";
+            js:properties [
+                a js:NumberSchema ;
+                js:propertyName "value"; 
+            ] ;
+            js:properties [
+                a js:StringSchema ;
+                js:propertyName "time";
+            ] ;
+        ];   
+        td:isObservable false;
+    ], [ 
+        a td:PropertyAffordance, saref:Light;
+        td:name "lightStream";
+        td:description "stream of light measurements in the last hour"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=light&duration=1> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ArraySchema;
+            js:propertyName "lastMeasurements";
+            js:items [
+                js:properties [
+                    a js:NumberSchema ;
+                    js:propertyName "value"; 
+                ] ;
+                js:properties [
+                    a js:StringSchema ;
+                    js:propertyName "time";
+                ] ;
+            ];
+        ];   
+        td:isObservable false;
+    ], 
+
+    [ 
+        a td:PropertyAffordance, saref:Humidity;
+        td:name "humidityValue";
+        td:description "last humidity measurement"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=humidity> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ObjectSchema;
+            js:propertyName "lastMeasurement";
+            js:properties [
+                a js:NumberSchema ;
+                js:propertyName "value"; 
+            ] ;
+            js:properties [
+                a js:StringSchema ;
+                js:propertyName "time";
+            ] ;
+        ];   
+        td:isObservable false;
+    ], [ 
+        a td:PropertyAffordance, saref:Humidity;
+        td:name "humidityStream";
+        td:description "stream of humidity measurements in the last hour"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=humidity&duration=1> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ArraySchema;
+            js:propertyName "lastMeasurements";
+            js:items [
+                js:properties [
+                    a js:NumberSchema ;
+                    js:propertyName "value"; 
+                ] ;
+                js:properties [
+                    a js:StringSchema ;
+                    js:propertyName "time";
+                ] ;
+            ];
+        ];   
+        td:isObservable false;
+    ],
+
+    [ 
+        a td:PropertyAffordance, saref:Temperature;
+        td:name "temperatureValue";
+        td:description "last temperature measurement"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=temperature> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ObjectSchema;
+            js:propertyName "lastMeasurement";
+            js:properties [
+                a js:NumberSchema ;
+                js:propertyName "value"; 
+            ] ;
+            js:properties [
+                a js:StringSchema ;
+                js:propertyName "time";
+            ] ;
+        ];   
+        td:isObservable false;
+    ], [ 
+        a td:PropertyAffordance, saref:Temperature;
+        td:name "temperatureStream";
+        td:description "stream of temperature measurements in the last hour"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=temperature&duration=1> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ArraySchema;
+            js:propertyName "lastMeasurements";
+            js:items [
+                js:properties [
+                    a js:NumberSchema ;
+                    js:propertyName "value"; 
+                ] ;
+                js:properties [
+                    a js:StringSchema ;
+                    js:propertyName "time";
+                ] ;
+            ];
+        ];   
+        td:isObservable false;
+    ],
+
+    [ 
+        a td:PropertyAffordance, saref:Pressure;
+        td:name "pressureValue";
+        td:description "last pressure measurement"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=pressure> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ObjectSchema;
+            js:propertyName "lastMeasurement";
+            js:properties [
+                a js:NumberSchema ;
+                js:propertyName "value"; 
+            ] ;
+            js:properties [
+                a js:StringSchema ;
+                js:propertyName "time";
+            ] ;
+        ];   
+        td:isObservable false;
+    ], [ 
+        a td:PropertyAffordance, saref:Pressure;
+        td:name "pressureStream";
+        td:description "stream of pressure measurements in the last hour"
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=thunderboard_086bd7fe10cb&field=pressure&duration=1> ;
+            hctl:forContentType "application/json";
+            hctl:hasOperationType td:readProperty;
+        ] ;
+        js:properties [ 
+            a js:ArraySchema;
+            js:propertyName "lastMeasurements";
+            js:items [
+                js:properties [
+                    a js:NumberSchema ;
+                    js:propertyName "value"; 
+                ] ;
+                js:properties [
+                    a js:StringSchema ;
+                    js:propertyName "time";
+                ] ;
+            ];
+        ];   
+        td:isObservable false;
+    ];
