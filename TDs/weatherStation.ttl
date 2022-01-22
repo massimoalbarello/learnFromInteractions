@@ -7,7 +7,7 @@
 @prefix saref: <https://saref.etsi.org/core/v3.1.1/#> .
 @prefix purl: <http://purl.org/iot/vocab/m3-lite#> .
 @prefix staroch: <http://paul.staroch.name/thesis/SmartHomeWeather.owl#> .
-​
+
 <urn:weather_station> a td:Thing ;
     dct:title "weather_station" ;
     td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
@@ -16,7 +16,7 @@
 
         a td:PropertyAffordance, saref:Light;
         td:name "lightValue";
-        td:description "last light measurement"
+        td:description "last light measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=light_level> ;
@@ -29,8 +29,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -39,7 +38,7 @@
     ], [ 
         a td:PropertyAffordance, saref:Light;
         td:name "lightStream";
-        td:description "stream of light measurements in the last hour"
+        td:description "stream of light measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=light_level&duration=1> ;
@@ -53,8 +52,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -66,7 +64,7 @@
     [ 
         a td:PropertyAffordance, saref:Temperature;
         td:name "temperatureValue";
-        td:description "last temperature measurement"
+        td:description "last temperature measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=temperature> ;
@@ -79,8 +77,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -89,7 +86,7 @@
     ], [ 
         a td:PropertyAffordance, saref:Temperature;
         td:name "temperatureStream";
-        td:description "stream of temperature measurements in the last hour"
+        td:description "stream of temperature measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=temperature&duration=1> ;
@@ -103,8 +100,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -116,7 +112,7 @@
     [ 
         a td:PropertyAffordance, purl:SunPositionElevation;
         td:name "sunElevationValue";
-        td:description "last sun elevation measurement"
+        td:description "last sun elevation measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_elevation> ;
@@ -129,8 +125,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -139,7 +134,7 @@
     ], [ 
         a td:PropertyAffordance, purl:SunPositionElevation;
         td:name "sunElevationStream";
-        td:description "stream of sun elevation measurements in the last hour"
+        td:description "stream of sun elevation measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_elevation&duration=1> ;
@@ -153,8 +148,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -166,7 +160,7 @@
     [ 
         a td:PropertyAffordance, purl:DirectionAzimuth;
         td:name "sunAzimuthValue";
-        td:description "last sun azimuth measurement"
+        td:description "last sun azimuth measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_azimuth> ;
@@ -179,8 +173,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -189,7 +182,7 @@
     ], [ 
         a td:PropertyAffordance, purl:DirectionAzimuth;
         td:name "sunAzimuthStream";
-        td:description "stream of sun azimuth measurements in the last hour"
+        td:description "stream of sun azimuth measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_azimuth&duration=1> ;
@@ -203,8 +196,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -216,7 +208,7 @@
     [ 
         a td:PropertyAffordance, purl:SolarRadiation;
         td:name "sunRadiationValue";
-        td:description "last sun radiation measurement"
+        td:description "last sun radiation measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_radiation> ;
@@ -229,8 +221,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -239,7 +230,7 @@
     ], [ 
         a td:PropertyAffordance, purl:SolarRadiation;
         td:name "sunRadiationStream";
-        td:description "stream of sun radiation measurements in the last hour"
+        td:description "stream of sun radiation measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=sun_radiation&duration=1> ;
@@ -253,8 +244,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -266,7 +256,7 @@
     [ 
         a td:PropertyAffordance, purl:WindSpeed;
         td:name "windSpeedValue";
-        td:description "last wind speed measurement"
+        td:description "last wind speed measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=wind_speed> ;
@@ -279,8 +269,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -289,7 +278,7 @@
     ], [ 
         a td:PropertyAffordance, purl:WindSpeed;
         td:name "windSpeedStream";
-        td:description "stream of wind speed measurements in the last hour"
+        td:description "stream of wind speed measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=wind_speed&duration=1> ;
@@ -303,8 +292,7 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
@@ -316,7 +304,7 @@
     [ 
         a td:PropertyAffordance, staroch:Rain;
         td:name "rainIntensityValue";
-        td:description "last rain intensity measurement"
+        td:description "last rain intensity measurement";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=rain_intensity> ;
@@ -329,8 +317,7 @@
             js:properties [
                 a js:NumberSchema ;
                 js:propertyName "value"; 
-            ] ;
-            js:properties [
+            ], [
                 a js:StringSchema ;
                 js:propertyName "time";
             ] ;
@@ -339,7 +326,7 @@
     ], [ 
         a td:PropertyAffordance, staroch:Rain;
         td:name "rainIntensityStream";
-        td:description "stream of rain intensity measurements in the last hour"
+        td:description "stream of rain intensity measurements in the last hour";
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <http://10.2.2.33:1880/InfluxDB?measurement=weather_station&field=rain_intensity&duration=1> ;
@@ -353,14 +340,11 @@
                 js:properties [
                     a js:NumberSchema ;
                     js:propertyName "value"; 
-                ] ;
-                js:properties [
+                ], [
                     a js:StringSchema ;
                     js:propertyName "time";
                 ] ;
             ];
         ];   
         td:isObservable false;
-    ],
-
-    
+    ].
